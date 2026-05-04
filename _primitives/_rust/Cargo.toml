@@ -183,6 +183,8 @@ members = [
     "kei-arch-map",
     # Code-hygiene scanner: dead code, unused deps, LOC checks, dep drift (CLEANUP-RUNTIME-SPEC.md)
     "kei-cleanup",
+    # Phase 2 PR-3: bridge kei-registry formulas → arch/PLAN.toml (MATH-DNA-DESIGN §4)
+    "kei-arch-derive",
     # Wave 10: KeiWiki — auto-extract source → markdown for living docs site
     "keidocs",
     # Wave 10: KeiWiki — DNA manifest signing per primitive (sha256, ed25519 phase 2)

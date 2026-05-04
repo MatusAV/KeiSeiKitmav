@@ -3051,6 +3051,20 @@ dependencies = [
 ]
 
 [[package]]
+name = "kei-arch-derive"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "clap",
+ "kei-registry",
+ "serde",
+ "serde_json",
+ "tempfile",
+ "toml",
+ "walkdir",
+]
+
+[[package]]
 name = "kei-arch-map"
 version = "0.1.0"
 dependencies = [

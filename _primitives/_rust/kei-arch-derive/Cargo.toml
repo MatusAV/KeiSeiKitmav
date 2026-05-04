@@ -1,0 +1,28 @@
+[package]
+name = "kei-arch-derive"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+authors.workspace = true
+license.workspace = true
+description = "Bridge: kei-registry formulas → arch/PLAN.toml. Phase 2 PR-3."
+
+[[bin]]
+name = "kei-arch-derive"
+path = "src/main.rs"
+
+[lib]
+name = "kei_arch_derive"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = { workspace = true }
+clap = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+toml = { workspace = true }
+walkdir = { workspace = true }
+kei-registry = { path = "../kei-registry" }
+
+[dev-dependencies]
+tempfile = { workspace = true }
