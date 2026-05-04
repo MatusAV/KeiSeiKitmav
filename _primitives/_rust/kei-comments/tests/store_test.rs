@@ -97,3 +97,37 @@ fn body_length_cap_rejected() {
     // Empty is rejected.
     assert!(s.post("p", "alice", "   ", None).is_err());
 }
+
+#[test]
+fn react_on_nonexistent_returns_error() {
+    let s = open();
+    let err = s.react("does-not-exist", "bob", "👍").unwrap_err();
+    assert!(
+        err.to_string().contains("not found"),
+        "expected 'not found' error, got: {}",
+        err
+    );
+    // No ghost reaction was inserted.
+    let map = s.reactions("does-not-exist").unwrap();
+    assert!(map.is_empty(), "ghost reactions must not be persisted");
+    // unreact on a non-existent comment is also rejected.
+    assert!(s.unreact("does-not-exist", "bob", "👍").is_err());
+}
+
+#[test]
+fn react_on_deleted_returns_error() {
+    let s = open();
+    let id = s.post("p", "alice", "doomed", None).unwrap();
+    assert!(s.delete(&id, "alice").unwrap());
+
+    // Reaction on a tombstoned comment is rejected.
+    let err = s.react(&id, "bob", "👍").unwrap_err();
+    assert!(
+        err.to_string().contains("deleted"),
+        "expected 'deleted' error, got: {}",
+        err
+    );
+    // No reaction was attached to the tombstone.
+    let map = s.reactions(&id).unwrap();
+    assert!(map.is_empty(), "tombstones must not accept reactions");
+}

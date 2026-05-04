@@ -119,11 +119,26 @@ pub async fn react_comment(
         let guard = lock_store(&store)?;
         guard
             .react(&id, &req.author, &req.emoji)
-            .map_err(|e| AppError::Internal(format!("react: {e}")))
+            .map_err(|e| map_substrate_err("react", e))
     })
     .await
     .map_err(|e| AppError::Internal(format!("join: {e}")))??;
     Ok(Json(json!({ "ok": true })))
+}
+
+/// Map a substrate `anyhow::Error` from `kei-comments` into the appropriate
+/// `AppError` HTTP status. Substrate uses string-tagged anyhow errors;
+/// we pattern-match on the message rather than introducing a typed-error
+/// dependency for now (one place to revisit when substrate adopts thiserror).
+fn map_substrate_err(op: &'static str, e: anyhow::Error) -> AppError {
+    let msg = e.to_string();
+    if msg.contains("not found") {
+        AppError::NotFound(msg)
+    } else if msg.contains("deleted") {
+        AppError::BadRequest(msg)
+    } else {
+        AppError::Internal(format!("{op}: {e}"))
+    }
 }
 
 fn comment_to_response(c: &Comment) -> Value {

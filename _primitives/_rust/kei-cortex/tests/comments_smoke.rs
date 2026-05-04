@@ -4,6 +4,10 @@
 //! POST → GET → react → DELETE → GET (asserts deleted=true).
 //! `KEI_COMMENTS_DB` is set to a per-test tempfile so the suite
 //! never touches the real `~/.keisei/comments.sqlite`.
+//!
+//! Note: the comments primitive uses a process-wide `OnceLock` for the
+//! global store, so this test is the ONLY one in this binary. The 401
+//! unauth check lives in its own binary at `tests/comments_unauth.rs`.
 
 mod common;
 
@@ -27,7 +31,10 @@ async fn comments_lifecycle_post_list_react_delete() {
 
     // 1) POST a comment.
     let post = client
-        .post(format!("{}/api/v1/cortex/comments/{page_id}", srv.base_url))
+        .post(format!(
+            "{}/api/v1/cortex/comments/by-page/{page_id}",
+            srv.base_url
+        ))
         .header(header::AUTHORIZATION, &auth)
         .json(&json!({ "author": "alice", "body": "hello world" }))
         .send()
@@ -38,23 +45,33 @@ async fn comments_lifecycle_post_list_react_delete() {
     let id = body["comment_id"].as_str().expect("comment_id").to_string();
     assert_eq!(body["author"], "alice");
     assert_eq!(body["body"], "hello world");
+    assert_eq!(body["page_id"], page_id);
+    assert!(body["created_at"].is_string(), "created_at present");
+    assert!(body["updated_at"].is_string(), "updated_at present");
+    assert_eq!(body["deleted"], false);
 
     // 2) GET list contains it.
     let list = client
-        .get(format!("{}/api/v1/cortex/comments/{page_id}", srv.base_url))
+        .get(format!(
+            "{}/api/v1/cortex/comments/by-page/{page_id}",
+            srv.base_url
+        ))
         .header(header::AUTHORIZATION, &auth)
         .send()
         .await
         .unwrap();
     assert_eq!(list.status(), 200);
     let body: Value = list.json().await.unwrap();
-    let arr = body["comments"].as_array().unwrap();
+    let arr = body["comments"].as_array().expect("comments wrapper");
     assert_eq!(arr.len(), 1);
     assert_eq!(arr[0]["id"], id);
 
     // 3) POST react.
     let react = client
-        .post(format!("{}/api/v1/cortex/comments/{id}/react", srv.base_url))
+        .post(format!(
+            "{}/api/v1/cortex/comments/by-id/{id}/react",
+            srv.base_url
+        ))
         .header(header::AUTHORIZATION, &auth)
         .json(&json!({ "author": "bob", "emoji": "👍" }))
         .send()
@@ -68,7 +85,7 @@ async fn comments_lifecycle_post_list_react_delete() {
     let del = client
         .request(
             reqwest::Method::DELETE,
-            format!("{}/api/v1/cortex/comments/{id}", srv.base_url),
+            format!("{}/api/v1/cortex/comments/by-id/{id}", srv.base_url),
         )
         .header(header::AUTHORIZATION, &auth)
         .json(&json!({ "author": "alice" }))
@@ -81,7 +98,10 @@ async fn comments_lifecycle_post_list_react_delete() {
 
     // 5) GET list — comment is now deleted=true with empty body.
     let list = client
-        .get(format!("{}/api/v1/cortex/comments/{page_id}", srv.base_url))
+        .get(format!(
+            "{}/api/v1/cortex/comments/by-page/{page_id}",
+            srv.base_url
+        ))
         .header(header::AUTHORIZATION, &auth)
         .send()
         .await
@@ -91,15 +111,4 @@ async fn comments_lifecycle_post_list_react_delete() {
     let arr = body["comments"].as_array().unwrap();
     assert_eq!(arr.len(), 1);
     assert_eq!(arr[0]["deleted"], true);
-}
-
-#[tokio::test]
-async fn comments_unauthenticated_returns_401() {
-    let srv = spawn().await;
-    let resp = async_client()
-        .get(format!("{}/api/v1/cortex/comments/some-page", srv.base_url))
-        .send()
-        .await
-        .unwrap();
-    assert_eq!(resp.status(), 401);
 }

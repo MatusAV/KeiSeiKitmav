@@ -2,6 +2,11 @@
 // Mounts on <div id="keicomments-mount">, fetches kei-cortex
 // /api/v1/cortex/comments/{page_id}, renders threaded list + post form.
 // Page ID = window.location.pathname (one-to-one with the wiki page).
+//
+// Server response shape (source of truth: kei-cortex
+// src/comments_routes.rs::comment_to_response, line 129):
+//   { id, comment_id, page_id, author, body, parent_id,
+//     created_at, updated_at, deleted }
 
 (function () {
   const mount = document.getElementById('keicomments-mount');
@@ -28,6 +33,12 @@
     localStorage.setItem(AUTHOR_KEY, v);
   }
 
+  // h(tag, attrs, ...children) — minimal hyperscript helper.
+  // SECURITY: attribute values (attrs[k]) are written via setAttribute and
+  // are NOT auto-escaped. Callers MUST pass developer-controlled attribute
+  // values only — never user input, comment bodies, or any attacker-
+  // controlled string. Text-content children are safe: they go through
+  // document.createTextNode which escapes automatically.
   function h(tag, attrs, ...children) {
     const el = document.createElement(tag);
     for (const k in attrs || {}) {
@@ -59,6 +70,14 @@
     return res.json();
   }
 
+  function formatTime(c) {
+    if (!c.created_at) return '';
+    const created = new Date(c.created_at).toLocaleString();
+    const edited =
+      c.updated_at && c.updated_at !== c.created_at ? ' (edited)' : '';
+    return created + edited;
+  }
+
   function renderTree(comments) {
     const byParent = new Map();
     for (const c of comments) {
@@ -68,15 +87,17 @@
     }
     function node(c, depth) {
       const kids = byParent.get(c.id) || [];
+      const bodyText = c.deleted === true ? '[deleted]' : c.body;
+      const bodyClass = c.deleted === true ? 'keic-body keic-deleted' : 'keic-body';
       return h(
         'div',
         { class: 'keic-comment', style: `margin-left:${depth * 20}px` },
         h('div', { class: 'keic-meta' },
           h('strong', null, c.author),
           ' · ',
-          h('span', { class: 'keic-time' }, new Date(c.ts).toLocaleString())
+          h('span', { class: 'keic-time' }, formatTime(c))
         ),
-        h('div', { class: 'keic-body' }, c.body),
+        h('div', { class: bodyClass }, bodyText),
         ...kids.map((kid) => node(kid, depth + 1))
       );
     }
@@ -150,6 +171,7 @@
 .keic-comment:first-child { border-top: 0; }
 .keic-meta { font-size: 0.85em; opacity: 0.7; margin-bottom: 4px; }
 .keic-body { white-space: pre-wrap; }
+.keic-deleted { opacity: 0.5; font-style: italic; }
 .keic-form { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; align-items: flex-start; }
 .keic-author { width: 140px; padding: 4px 6px; }
 .keic-textarea { flex: 1 1 280px; min-width: 240px; padding: 6px; font-family: inherit; }

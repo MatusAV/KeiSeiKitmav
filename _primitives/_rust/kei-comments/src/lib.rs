@@ -120,8 +120,14 @@ impl CommentStore {
         Ok(n > 0)
     }
 
-    /// Add a reaction (idempotent — repeat is no-op via PK conflict).
+    /// Add a reaction. Rejects ghost reactions (comment missing or soft-deleted).
+    /// App-layer check substitutes for absent FOREIGN KEY (MVP, schema migration deferred).
     pub fn react(&self, comment_id: &str, author: &str, emoji: &str) -> Result<()> {
+        let c = self.get(comment_id)?
+            .ok_or_else(|| anyhow!("comment not found: {}", comment_id))?;
+        if c.deleted {
+            return Err(anyhow!("cannot react to deleted comment: {}", comment_id));
+        }
         self.conn.execute(
             "INSERT OR IGNORE INTO reactions (comment_id, author, emoji) VALUES (?1, ?2, ?3)",
             params![comment_id, author, emoji],
@@ -129,8 +135,12 @@ impl CommentStore {
         Ok(())
     }
 
-    /// Remove a reaction (idempotent — missing row is no-op).
+    /// Remove a reaction. Existence-only check: unreacting on a tombstone is
+    /// allowed so users can withdraw stale reactions after soft-delete.
     pub fn unreact(&self, comment_id: &str, author: &str, emoji: &str) -> Result<()> {
+        if self.get(comment_id)?.is_none() {
+            return Err(anyhow!("comment not found: {}", comment_id));
+        }
         self.conn.execute(
             "DELETE FROM reactions WHERE comment_id = ?1 AND author = ?2 AND emoji = ?3",
             params![comment_id, author, emoji],
@@ -184,10 +194,5 @@ fn derive_id(page_id: &str, author: &str, ts: &str, body: &str) -> String {
         h.update(part.as_bytes());
         h.update(b"\0");
     }
-    let digest = h.finalize();
-    let mut out = String::with_capacity(16);
-    for b in &digest[..8] {
-        out.push_str(&format!("{:02x}", b));
-    }
-    out
+    h.finalize()[..8].iter().map(|b| format!("{:02x}", b)).collect()
 }

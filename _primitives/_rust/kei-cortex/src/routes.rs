@@ -37,6 +37,7 @@ const CHAT_BODY_LIMIT: usize = 256 * 1024;             // 256 KiB
 const TOOL_APPLY_BODY_LIMIT: usize = 11 * 1024 * 1024; // 11 MiB (handler checks 10)
 const INTERACTION_BODY_LIMIT: usize = 64 * 1024;       // 64 KiB
 const TTS_BODY_LIMIT: usize = 32 * 1024;               // 32 KiB
+const COMMENTS_BODY_LIMIT: usize = 16 * 1024;          // 16 KiB — handler caps body at 10240 bytes
 
 // --- Concurrency budgets ----------------------------------------------------
 const PORTRAIT_CONCURRENCY: usize = 2;
@@ -117,15 +118,18 @@ fn build_api_router() -> Router<AppState> {
         .route(
             "/api/v1/cortex/comments/by-page/:page_id",
             get(crate::comments_routes::list_comments)
-                .post(crate::comments_routes::post_comment),
+                .post(crate::comments_routes::post_comment)
+                .layer(DefaultBodyLimit::max(COMMENTS_BODY_LIMIT)),
         )
         .route(
             "/api/v1/cortex/comments/by-id/:id",
-            delete(crate::comments_routes::delete_comment),
+            delete(crate::comments_routes::delete_comment)
+                .layer(DefaultBodyLimit::max(COMMENTS_BODY_LIMIT)),
         )
         .route(
             "/api/v1/cortex/comments/by-id/:id/react",
-            post(crate::comments_routes::react_comment),
+            post(crate::comments_routes::react_comment)
+                .layer(DefaultBodyLimit::max(COMMENTS_BODY_LIMIT)),
         )
 }
 
@@ -136,7 +140,7 @@ fn build_cors(origin: &str) -> Result<CorsLayer, String> {
         .map_err(|e| format!("parse cors origin {origin:?}: {e}"))?;
     Ok(CorsLayer::new()
         .allow_origin(origin_header)
-        .allow_methods([Method::GET, Method::POST, Method::OPTIONS])
+        .allow_methods([Method::GET, Method::POST, Method::DELETE, Method::OPTIONS])
         .allow_headers([header::AUTHORIZATION, header::CONTENT_TYPE])
         .allow_credentials(true))
 }
