@@ -51,8 +51,10 @@ fn collect_source_files(root: &Path) -> Result<Vec<FileEntry>> {
         }
         let rel = p.strip_prefix(root).unwrap_or(p);
         let rel_str = rel.to_string_lossy().replace('\\', "/");
-        let included = rel_str == "Cargo.toml"
-            || (rel_str.starts_with("src/") && rel_str.ends_with(".rs"));
+        // Cargo.toml NOT included — deps already tracked separately in deps[].
+        // Including Cargo.toml hash here breaks dep_order_is_normalized invariant
+        // since Cargo.toml text differs by dep ordering even if normalized deps match.
+        let included = rel_str.starts_with("src/") && rel_str.ends_with(".rs");
         if !included {
             continue;
         }
