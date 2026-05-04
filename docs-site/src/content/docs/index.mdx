@@ -1,0 +1,40 @@
+---
+title: KeiSeiKit — living source of truth
+description: Self-extending substrate of Rust primitives, agents, skills, and hooks. Auto-documented from git, signed at commit, growing with every fork.
+template: splash
+hero:
+  tagline: Self-extending substrate of Rust primitives, agents, skills, and hooks. Auto-documented from git, signed at commit, growing with every fork.
+  actions:
+    - text: Browse Primitives
+      link: /primitives/
+      icon: right-arrow
+      variant: primary
+    - text: View on GitHub
+      link: https://github.com/KeiSei84/KeiSeiKit-1.0
+      icon: external
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+## Explore the substrate
+
+<CardGrid stagger>
+	<Card title="Primitives" icon="seti:rust">
+		Rust crates that compose the runtime — `kei-ledger`, `kei-tlog`,
+		`kei-ping`, `kei-disk-scan`, and dozens more.
+		[Browse →](/primitives/)
+	</Card>
+	<Card title="Skills" icon="puzzle">
+		User-invokable workflows — `/escalate-recurrence`, `/sleep-setup`,
+		`/new-project`, `/visual-loop`. [Browse →](/skills/)
+	</Card>
+	<Card title="Hooks" icon="setting">
+		PreToolUse and PostToolUse guards — `numeric-claims-guard`,
+		`disk-headroom-check`, `agent-stub-scan`. [Browse →](/hooks/)
+	</Card>
+</CardGrid>
+
+Powered by `keidocs` — the runtime that derives this site directly from
+the git history of every primitive, skill, and hook. Every page carries
+a DNA hash and the commit that signed it.

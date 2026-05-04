@@ -1,0 +1,118 @@
+# KeiWiki Build & Deploy
+#
+# Purpose: extract DNA-tagged docs from source → render Astro Starlight site →
+#          publish to GitHub Pages on every push to main.
+#
+# Pipeline: source tree → keidocs extract → docs-site/src/content/docs/*.md
+#           → Astro build → site/ → GitHub Pages (OIDC).
+#
+# Local test (mirrors CI):
+#   cargo build -p keidocs --release --manifest-path _primitives/_rust/Cargo.toml
+#   ./_primitives/_rust/target/release/keidocs extract \
+#       --root _primitives/_rust --out docs-site/src/content/docs/primitives
+#   ./_primitives/_rust/target/release/keidocs extract \
+#       --root skills --out docs-site/src/content/docs/skills
+#   ./_primitives/_rust/target/release/keidocs extract \
+#       --root hooks  --out docs-site/src/content/docs/hooks
+#   ./_primitives/_rust/target/release/keidocs validate \
+#       --out docs-site/src/content/docs/primitives
+#   cd docs-site && npm ci && npm run build
+
+name: KeiWiki Build & Deploy
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "_primitives/**"
+      - "skills/**"
+      - "hooks/**"
+      - "docs-site/**"
+      - ".github/workflows/keiwiki.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: keiwiki-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  build:
+    name: Build keidocs + Astro site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache cargo build
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: _primitives/_rust -> target
+          cache-on-failure: true
+
+      - name: Setup Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: docs-site/package-lock.json
+
+      - name: Build keidocs (release)
+        run: cargo build -p keidocs --release --manifest-path _primitives/_rust/Cargo.toml
+
+      - name: Extract docs (primitives)
+        run: |
+          ./_primitives/_rust/target/release/keidocs extract \
+            --root _primitives/_rust \
+            --out docs-site/src/content/docs/primitives
+
+      - name: Extract docs (skills)
+        run: |
+          ./_primitives/_rust/target/release/keidocs extract \
+            --root skills \
+            --out docs-site/src/content/docs/skills
+
+      - name: Extract docs (hooks)
+        run: |
+          ./_primitives/_rust/target/release/keidocs extract \
+            --root hooks \
+            --out docs-site/src/content/docs/hooks
+
+      - name: Validate extracted docs (DNA hashes present)
+        run: |
+          ./_primitives/_rust/target/release/keidocs validate \
+            --out docs-site/src/content/docs/primitives
+
+      - name: Install Astro deps
+        working-directory: docs-site
+        run: npm ci
+
+      - name: Build Astro site
+        working-directory: docs-site
+        run: npm run build
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: ./site
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@v4

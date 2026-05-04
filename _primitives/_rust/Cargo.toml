@@ -183,6 +183,10 @@ members = [
     "kei-arch-map",
     # Code-hygiene scanner: dead code, unused deps, LOC checks, dep drift (CLEANUP-RUNTIME-SPEC.md)
     "kei-cleanup",
+    # Wave 10: KeiWiki — auto-extract source → markdown for living docs site
+    "keidocs",
+    # Wave 10: KeiWiki — DNA manifest signing per primitive (sha256, ed25519 phase 2)
+    "keidna-sign",
 ]
 
 [workspace.package]

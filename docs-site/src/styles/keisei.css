@@ -1,0 +1,70 @@
+/*
+ * KeiSei brand overrides for Starlight.
+ * Palette:
+ *   navy    #0f1828  (Studio Dark surface)
+ *   navy-2  #1a2744  (Studio Dark accent)
+ *   amber   #f59e0b  (KeiSei amber)
+ *   indigo  #4f46e5  (Studio Light accent)
+ *   cream   #faf8f4  (Studio Light surface)
+ *   coal    #1f2024  (Studio Light text)
+ */
+
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Instrument+Serif&family=JetBrains+Mono:wght@400;500&display=swap');
+
+:root {
+  --sl-font: 'Inter', system-ui, -apple-system, sans-serif;
+  --sl-font-system-mono: 'JetBrains Mono', ui-monospace, monospace;
+  --keisei-display: 'Instrument Serif', Georgia, serif;
+}
+
+/* Studio Dark (default) */
+:root[data-theme='dark'] {
+  --sl-color-accent-low: #1a2744;
+  --sl-color-accent: #4f46e5;
+  --sl-color-accent-high: #f59e0b;
+  --sl-color-white: #faf8f4;
+  --sl-color-gray-1: #e5e7eb;
+  --sl-color-gray-2: #c8cdd6;
+  --sl-color-gray-3: #8a92a3;
+  --sl-color-gray-4: #4a5163;
+  --sl-color-gray-5: #2a3142;
+  --sl-color-gray-6: #1a2030;
+  --sl-color-black: #0f1828;
+  --sl-color-bg: #0f1828;
+  --sl-color-bg-nav: #0f1828;
+  --sl-color-bg-sidebar: #131c2f;
+  --sl-color-text: #faf8f4;
+  --sl-color-text-accent: #f59e0b;
+}
+
+/* Studio Light */
+:root[data-theme='light'] {
+  --sl-color-accent-low: #ede9fe;
+  --sl-color-accent: #4f46e5;
+  --sl-color-accent-high: #1a2744;
+  --sl-color-white: #1f2024;
+  --sl-color-gray-1: #2a2d34;
+  --sl-color-gray-2: #424754;
+  --sl-color-gray-3: #6b7280;
+  --sl-color-gray-4: #9ca3af;
+  --sl-color-gray-5: #e5e1d6;
+  --sl-color-gray-6: #f0ece0;
+  --sl-color-black: #faf8f4;
+  --sl-color-bg: #faf8f4;
+  --sl-color-bg-nav: #f0ece0;
+  --sl-color-bg-sidebar: #f5f1e6;
+  --sl-color-text: #1f2024;
+  --sl-color-text-accent: #4f46e5;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--keisei-display);
+  letter-spacing: -0.01em;
+}
+
+.site-title {
+  font-family: var(--keisei-display);
+  font-size: 1.4rem;
+}

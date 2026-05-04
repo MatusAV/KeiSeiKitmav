@@ -1,0 +1,23 @@
+{
+  "name": "@keisei/docs-site",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "KeiSeiKit living documentation site (Astro Starlight)",
+  "scripts": {
+    "dev": "astro dev",
+    "start": "astro dev",
+    "build": "astro build",
+    "preview": "astro preview",
+    "astro": "astro"
+  },
+  "dependencies": {
+    "astro": "^5.0.0",
+    "@astrojs/starlight": "^0.30.0",
+    "@astrojs/mdx": "^4.0.0",
+    "sharp": "^0.33.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

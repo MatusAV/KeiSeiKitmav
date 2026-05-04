@@ -1,0 +1,18 @@
+# KeiWiki local build recipe
+# Drop these lines into a top-level `justfile` at the repo root, then run
+# `just docs` to mirror the GitHub Actions `keiwiki.yml` build job locally.
+#
+# This is reference text, not an executable file.
+
+# Build keidocs, extract DNA-tagged docs, render the Astro Starlight site.
+docs:
+    cargo build -p keidocs --release --manifest-path _primitives/_rust/Cargo.toml
+    ./_primitives/_rust/target/release/keidocs extract --root _primitives/_rust --out docs-site/src/content/docs/primitives
+    ./_primitives/_rust/target/release/keidocs extract --root skills              --out docs-site/src/content/docs/skills
+    ./_primitives/_rust/target/release/keidocs extract --root hooks               --out docs-site/src/content/docs/hooks
+    ./_primitives/_rust/target/release/keidocs validate --out docs-site/src/content/docs/primitives
+    cd docs-site && npm ci && npm run build
+
+# Preview the built site at http://localhost:4321
+docs-preview: docs
+    cd docs-site && npm run preview
