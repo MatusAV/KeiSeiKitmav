@@ -1,24 +1,15 @@
 # shellcheck shell=bash
-# lib-profile-outcome-only.sh — the "outcome-only" minimal install profile.
-#
-# Installs 5 files: 2 hooks + ledger.sqlite + 1 CLAUDE.md line + (deferred)
-# kei-model-router binary. Skips cortex daemon, Forgejo, launchd plists,
-# no-github-push hook, 100+ Rust crates, skills, agents.
-#
-# Usage:
-#   ./install.sh --profile=outcome-only            # install
-#   ./install.sh --profile=outcome-only --dry-run  # print plan, exit 0
-#
-# Requires say/warn/err (lib-log), backup_file (lib-backup),
-# _jq_merge_hooks (lib-hooks). Reads $KIT_DIR / $HOME_DIR /
-# $HOOKS_DIR / $AGENTS_DIR. Sets $OUTCOME_DRY_RUN_FILES.
+# lib-profile-outcome-only.sh — minimal "outcome-only" install profile.
+# Installs: 2 hooks + ledger.sqlite + 1 CLAUDE.md line + (deferred) kei-model.
+# Usage: ./install.sh --profile=outcome-only [--dry-run] [--yes]
+# Requires say/warn/err (lib-log), backup_file (lib-backup), _jq_merge_hooks
+# (lib-hooks). Reads $KIT_DIR / $HOME_DIR / $HOOKS_DIR / $AGENTS_DIR.
 # See docs/PROFILE-OUTCOME-ONLY.md for the user-facing pitch.
 
 OUTCOME_DRY_RUN_FILES=""
 
 # Append a path to the dry-run list, one per line.
 _outcome_dr_add() { OUTCOME_DRY_RUN_FILES="${OUTCOME_DRY_RUN_FILES}${1}"$'\n'; }
-
 # Single-line CLAUDE.md instruction. No behavioural rewrite — one rule.
 _outcome_marker_line() {
   printf 'At the end of every subagent invocation, emit a STATUS-TRUTH MARKER block (RULE 0.16) so the outcome-only ledger can backfill the agents row.\n'
@@ -98,29 +89,36 @@ _outcome_install_claude_md() {
   say "appended STATUS-TRUTH MARKER instruction to $cm"
 }
 
-# Build kei-model-router if cargo on PATH; otherwise deferred.
+# Build kei-model (workspace model registry + selector). Bug #30.a: the earlier
+# kei-model-router name pointed at a non-workspace crate; kei-model is canonical.
 _outcome_install_router_if_cargo() {
   command -v cargo >/dev/null 2>&1 || {
-    warn "cargo not found; skipping kei-model-router build (deferred)"
+    warn "cargo not found; skipping kei-model build (deferred)"
     return 0
   }
-  local crate_dir="$KIT_DIR/_primitives/_rust/kei-model-router"
-  [ -d "$crate_dir" ] || { warn "kei-model-router crate dir missing; skipped"; return 0; }
-  say "building kei-model-router (release)..."
+  local crate_dir="$KIT_DIR/_primitives/_rust/kei-model"
+  [ -d "$crate_dir" ] || { warn "kei-model crate dir missing; skipped"; return 0; }
+  say "building kei-model (release)..."
   ( cd "$crate_dir" && cargo build --release --quiet 2>&1 ) \
-    || warn "cargo build failed; router not installed (rerun manually if desired)"
+    || warn "cargo build failed; kei-model not installed (rerun manually if desired)"
 }
 
-# Confirm gate (Fix 1): show plan + prompt; skip for dry-run or --yes.
+# Confirm gate: plan + prompt; skip for dry-run or --yes.
+# Bug #30.b: TTY guard — bare `read` hangs `curl|bash`; refuse non-TTY w/o --yes.
 _outcome_confirm_if_needed() {
   [ "${OUTCOME_DRY_RUN:-0}" = "1" ] && return 0
   [ "${ASSUME_YES:-0}" = "1" ]      && return 0
+  if [ ! -t 0 ] || [ ! -t 1 ]; then
+    err "outcome-only profile requires interactive confirm OR --yes flag"
+    err "rerun with: ./install.sh --profile=outcome-only --yes"
+    exit 1
+  fi
   say "Outcome-only profile will install:"
   say "  - 2 hooks (~/.claude/hooks/agent-outcome-backfill.sh, error-spike-detector.sh)"
   say "  - SQLite ledger (~/.claude/agents/ledger.sqlite)"
   say "  - 1 line in ~/.claude/CLAUDE.md (STATUS-TRUTH MARKER instruction)"
   say "  - jq-merge of 2 hook entries into ~/.claude/settings.json"
-  say "  - kei-model-router binary (deferred if cargo missing)"
+  say "  - kei-model binary (deferred if cargo missing)"
   printf "Continue? [y/N] "
   read -r _oc_ans
   case "$_oc_ans" in
@@ -153,11 +151,13 @@ _outcome_merge_settings() {
     cp -f "$snippet" "$HOME_DIR/.claude/settings.json" \
       && say "created settings.json from outcome-only snippet"
   else
-    # cp -p aside (not backup_file which MOVES) + register in BACKUP_PAIRS for rollback.
-    local _ts _bak
-    _ts=$(date +%s)
-    _bak="$HOME_DIR/.claude/settings.json.bak-$_ts"
-    cp -p "$HOME_DIR/.claude/settings.json" "$_bak"
+    # cp -p aside + register in BACKUP_PAIRS for rollback.
+    # Bug #37: mktemp avoids TOCTOU on 1-s `date +%s` collisions across parallel runs.
+    local _bak
+    _bak=$(mktemp "$HOME_DIR/.claude/settings.json.bak-XXXXXX") \
+      || { err "failed to create backup tempfile"; rm -f "$snippet"; return 1; }
+    cp -p "$HOME_DIR/.claude/settings.json" "$_bak" \
+      || { err "backup failed: $_bak"; rm -f "$_bak" "$snippet"; return 1; }
     BACKUP_PAIRS+=("$HOME_DIR/.claude/settings.json|$_bak")
     if ! _jq_merge_hooks "$snippet" "$HOME_DIR/.claude/settings.json"; then
       err "settings.json merge failed; rollback trap will restore from $_bak"
@@ -196,5 +196,5 @@ install_profile_outcome_only() {
     warn "  ledger:   NOT INSTALLED — backfill hook will be silent no-op until sqlite3/kei-ledger is available"
   fi
   say "  CLAUDE.md updated (1 line appended)"
-  say "  router:   built (if cargo present), else deferred — see docs/PROFILE-OUTCOME-ONLY.md"
+  say "  kei-model: built (if cargo present), else deferred — see docs/PROFILE-OUTCOME-ONLY.md"
 }
