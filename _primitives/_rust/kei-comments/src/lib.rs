@@ -68,7 +68,7 @@ impl CommentStore {
         Ok(())
     }
 
-    /// Insert a new comment. Returns the assigned id (16-hex of sha256).
+    /// Insert a new comment. Returns the assigned id (32-hex of sha256, 128-bit).
     pub fn post(
         &self,
         page_id: &str,
@@ -194,5 +194,10 @@ fn derive_id(page_id: &str, author: &str, ts: &str, body: &str) -> String {
         h.update(part.as_bytes());
         h.update(b"\0");
     }
-    h.finalize()[..8].iter().map(|b| format!("{:02x}", b)).collect()
+    // Wave 10 follow-up: 64→128 bit truncation for comment-ID PRIMARY KEY.
+    // Variant of the Wave 7C class — same crypto-hash truncation pattern but
+    // in a different SSoT (SQLite primary key, not the substrate DNA wire
+    // format). At 64-bit, P(collision) ≈ N²/2^65; safe to ~10K comments,
+    // borderline at 100M. 128-bit pushes the bound to ~10^18 comments.
+    h.finalize()[..16].iter().map(|b| format!("{:02x}", b)).collect()
 }
