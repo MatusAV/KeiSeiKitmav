@@ -9,4 +9,6 @@
 
 pub mod dna;
 
-pub use dna::{compose_dna, is_hex8, parse_dna, DnaError, ParsedDna};
+pub use dna::{compose_dna, is_hex16, parse_dna, DnaError, ParsedDna};
+#[allow(deprecated)]
+pub use dna::is_hex8;

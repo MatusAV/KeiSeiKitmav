@@ -5,12 +5,15 @@
 //!   - `role`        — role slug, e.g. `edit-local`
 //!   - `caps-bitmap` — hyphen-separated 2-char atom codes (ordered, from
 //!                     the resolved capability list)
-//!   - `scope-hash`  — 8-char truncated SHA-256 of canonicalised scope fields
-//!                     (32-bit; widened from 16-bit to push birthday collision
-//!                     threshold from ~256 to ~65k agents per role+caps group)
-//!   - `body-hash`   — 8-char truncated SHA-256 of `task.body.text` (32-bit)
-//!   - `nonce`       — 8-char hex from `rand::random::<u32>()` (full 32-bit
-//!                     entropy; was 16-bit pre-2026-04 H4/M4/S3 widening)
+//!   - `scope-hash`  — 16-char truncated SHA-256 of canonicalised scope fields
+//!                     (64-bit; Wave 7C bumped from 32-bit to push birthday
+//!                     collision threshold from ~65k to ~4 billion agents per
+//!                     role+caps group; 587-block substrate × growth horizon
+//!                     made 32-bit unsafe)
+//!   - `body-hash`   — 16-char truncated SHA-256 of `task.body.text` (64-bit;
+//!                     Wave 7C width)
+//!   - `nonce`       — 16-char hex from 8 random bytes (64-bit entropy;
+//!                     Wave 7C bumped from 32-bit)
 //!
 //! Constructor Pattern: one cube = DNA identity primitive only. No I/O.
 //!
@@ -24,7 +27,7 @@
 //! Wire-format SSoT lives in `kei_shared::dna` — `render()` delegates to
 //! `kei_shared::compose_dna` so the format string exists in one place.
 //! Strict parser primitives from `kei_shared` (`parse_dna`, `ParsedDna`,
-//! `is_hex8`) are re-exported for callers that want width validation;
+//! `is_hex16`) are re-exported for callers that want width validation;
 //! the in-crate lenient `Dna::parse` stays for rolling-upgrade support.
 
 use crate::capability::TaskSpec;
@@ -33,9 +36,11 @@ use sha2::{Digest, Sha256};
 use thiserror::Error;
 
 /// Re-export of the strict wire-format parser from `kei_shared::dna`.
-/// Callers needing 8-hex width validation (e.g. kei-dna-index) use these;
+/// Callers needing 16-hex width validation (e.g. kei-dna-index) use these;
 /// rolling-upgrade callers use the lenient [`Dna::parse`] below.
-pub use kei_shared::dna::{is_hex8, parse_dna, ParsedDna};
+pub use kei_shared::dna::{is_hex16, parse_dna, ParsedDna};
+#[allow(deprecated)]
+pub use kei_shared::dna::is_hex8;
 
 /// Capability-name → 2-char atom code lookup.
 ///
@@ -175,16 +180,18 @@ fn canonical_scope(task: &TaskSpec) -> String {
 
 fn short_sha256(input: &str) -> String {
     let digest = Sha256::digest(input.as_bytes());
-    // 4 bytes = 8 hex chars = 32-bit truncation (widened from 16-bit).
-    format!(
-        "{:02X}{:02X}{:02X}{:02X}",
-        digest[0], digest[1], digest[2], digest[3]
-    )
+    // Wave 7C: 8 bytes = 16 hex chars = 64-bit truncation
+    // (was 32-bit; bumped for collision safety on growing substrate).
+    let mut s = String::with_capacity(16);
+    for b in digest.iter().take(8) {
+        s.push_str(&format!("{b:02X}"));
+    }
+    s
 }
 
 fn nonce_hex() -> String {
-    // 32-bit nonce (widened from 16-bit). Birthday collision threshold
-    // ~65k DNAs sharing the same role+caps+scope+body triple.
-    let r: u32 = rand::random();
-    format!("{r:08x}")
+    // Wave 7C: 64-bit nonce (was 32-bit). Birthday collision threshold
+    // ~4 billion DNAs sharing the same role+caps+scope+body quadruple.
+    let r: u64 = rand::random();
+    format!("{r:016x}")
 }

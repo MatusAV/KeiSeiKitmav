@@ -1,8 +1,13 @@
-//! DNA wire format: `<role>::<caps>::<sha8-scope>::<sha8-body>-<hex8-nonce>`.
+//! DNA wire format: `<role>::<caps>::<sha16-scope>::<sha16-body>-<hex16-nonce>`.
 //!
 //! SSoT for the substrate identity string. Any format-level change lands
 //! here and propagates to consumers (kei-agent-runtime, kei-dna-index)
 //! through re-export, not duplication.
+//!
+//! Wave 7C width bump: hex segments widened from 8→16 chars (32→64 bits).
+//! At 32-bit per segment the birthday-bound collision threshold for
+//! agent fingerprints is ~65k creations; at 64-bit it is ~4 billion.
+//! 587-block substrate × growth horizon makes 32-bit unsafe.
 
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
@@ -32,19 +37,27 @@ pub enum DnaError {
     EmptyRole,
     #[error("empty caps segment")]
     EmptyCaps,
-    #[error("invalid hex8 width for {field} (got {got})")]
+    #[error("invalid hex16 width for {field} (got {got})")]
     HexWidth { field: &'static str, got: usize },
     #[error("non-hex character in {field}")]
     NonHex { field: &'static str },
 }
 
-/// `true` iff `s` is exactly 8 ASCII hex characters.
-pub fn is_hex8(s: &str) -> bool {
-    s.len() == 8 && s.chars().all(|c| c.is_ascii_hexdigit())
+/// `true` iff `s` is exactly 16 ASCII hex characters.
+pub fn is_hex16(s: &str) -> bool {
+    s.len() == 16 && s.chars().all(|c| c.is_ascii_hexdigit())
+}
+
+/// Backward-compat shim: returns `false`. Old name kept so external
+/// callers compiling against the pre-Wave-7C API receive a hard
+/// rejection (rather than silent acceptance of legacy 8-char DNAs).
+#[deprecated(note = "Wave 7C: width bumped to 16; use is_hex16")]
+pub fn is_hex8(_s: &str) -> bool {
+    false
 }
 
 /// Strict parse. Requires 4 `::` segments, `<body>-<nonce>` tail, and
-/// 8-hex width on `scope_sha`, `body_sha`, `nonce`. Rejects empty role/caps.
+/// 16-hex width on `scope_sha`, `body_sha`, `nonce`. Rejects empty role/caps.
 pub fn parse_dna(s: &str) -> Result<ParsedDna, DnaError> {
     if s.is_empty() {
         return Err(DnaError::Empty);
@@ -57,9 +70,9 @@ pub fn parse_dna(s: &str) -> Result<ParsedDna, DnaError> {
         .split_once('-')
         .ok_or(DnaError::MissingNonceDelim)?;
     check_non_empty(parts[0], parts[1])?;
-    check_hex8("scope_sha", parts[2])?;
-    check_hex8("body_sha", body_sha)?;
-    check_hex8("nonce", nonce)?;
+    check_hex16("scope_sha", parts[2])?;
+    check_hex16("body_sha", body_sha)?;
+    check_hex16("nonce", nonce)?;
     Ok(ParsedDna {
         role: parts[0].to_string(),
         caps: parts[1].to_string(),
@@ -90,8 +103,8 @@ fn check_non_empty(role: &str, caps: &str) -> Result<(), DnaError> {
     Ok(())
 }
 
-fn check_hex8(field: &'static str, value: &str) -> Result<(), DnaError> {
-    if value.len() != 8 {
+fn check_hex16(field: &'static str, value: &str) -> Result<(), DnaError> {
+    if value.len() != 16 {
         return Err(DnaError::HexWidth {
             field,
             got: value.len(),
@@ -109,16 +122,37 @@ mod tests {
 
     #[test]
     fn compose_matches_manual_format() {
-        let s = compose_dna("r", "C", "12345678", "ABCDEF01", "deadbeef");
-        assert_eq!(s, "r::C::12345678::ABCDEF01-deadbeef");
+        let s = compose_dna(
+            "r", "C",
+            "1234567812345678",
+            "ABCDEF01ABCDEF01",
+            "deadbeefdeadbeef",
+        );
+        assert_eq!(
+            s,
+            "r::C::1234567812345678::ABCDEF01ABCDEF01-deadbeefdeadbeef"
+        );
     }
 
     #[test]
-    fn is_hex8_basic() {
-        assert!(is_hex8("12345678"));
-        assert!(is_hex8("AbCdEf01"));
-        assert!(!is_hex8("1234567"));
-        assert!(!is_hex8("123456789"));
-        assert!(!is_hex8("1234567Z"));
+    fn is_hex16_basic() {
+        assert!(is_hex16("1234567812345678"));
+        assert!(is_hex16("AbCdEf01AbCdEf01"));
+        assert!(!is_hex16("12345678")); // old 8-char width rejected
+        assert!(!is_hex16("123456781234567"));
+        assert!(!is_hex16("12345678123456789"));
+        assert!(!is_hex16("123456781234567Z"));
+    }
+
+    #[test]
+    fn deprecated_is_hex8_rejects_all() {
+        // Wave 7C: kept as `#[deprecated]` tombstone so callers still
+        // compiled against the old API hard-fail rather than silently
+        // accept legacy 8-char DNAs that would parse-fail downstream.
+        #[allow(deprecated)]
+        {
+            assert!(!is_hex8("12345678"));
+            assert!(!is_hex8("1234567812345678"));
+        }
     }
 }

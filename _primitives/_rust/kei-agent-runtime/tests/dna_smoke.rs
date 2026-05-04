@@ -70,10 +70,11 @@ fn rendered_dna_length_within_budget() {
     let r = edit_local_resolved();
     let s = Dna::compose(&task, &r).render();
     // role(10) + sep(2) + caps bitmap (8 caps * 3 - 1 = 23) + sep(2) +
-    // scope(8) + sep(2) + body(8) + `-` + nonce(8) = 64. Budget ≤88 per
-    // H4/M4/S3 widening spec; hard ceiling stays comfortably short.
+    // scope(16) + sep(2) + body(16) + `-` + nonce(16) = 88. Wave 7C
+    // widened budget ≤ 96 to admit the 16-hex segments (was ≤ 88 with
+    // 8-hex segments). Hard ceiling stays comfortably short.
     assert!(
-        s.len() <= 88,
+        s.len() <= 96,
         "DNA string should stay short; got {} chars: {}",
         s.len(),
         s
@@ -91,28 +92,30 @@ fn parse_rejects_malformed_shape() {
 }
 
 #[test]
-fn widened_dna_uses_8_hex_for_all_entropy_segments() {
+fn widened_dna_uses_16_hex_for_all_entropy_segments() {
+    // Wave 7C: bumped from 8-hex (32-bit) to 16-hex (64-bit) to push
+    // birthday-bound from ~65k to ~4 billion DNAs sharing role+caps+scope+body.
     let task = fixture_task("entropy budget check", &["x"], &["y"]);
     let r = edit_local_resolved();
     let dna = Dna::compose(&task, &r);
     assert_eq!(
         dna.scope_hash.len(),
-        8,
-        "scope_hash must be 8 hex (32-bit), got {}: {}",
+        16,
+        "scope_hash must be 16 hex (64-bit), got {}: {}",
         dna.scope_hash.len(),
         dna.scope_hash
     );
     assert_eq!(
         dna.body_hash.len(),
-        8,
-        "body_hash must be 8 hex (32-bit), got {}: {}",
+        16,
+        "body_hash must be 16 hex (64-bit), got {}: {}",
         dna.body_hash.len(),
         dna.body_hash
     );
     assert_eq!(
         dna.nonce.len(),
-        8,
-        "nonce must be 8 hex (32-bit), got {}: {}",
+        16,
+        "nonce must be 16 hex (64-bit), got {}: {}",
         dna.nonce.len(),
         dna.nonce
     );

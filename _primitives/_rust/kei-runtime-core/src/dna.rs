@@ -109,29 +109,35 @@ impl DnaBuilder {
 
     pub fn build(self) -> Result<Dna, DnaError> {
         let caps_str = self.caps.join("-");
-        let scope_sha = sha256_hex8(&self.scope_input);
-        let body_sha = sha256_hex8(&self.body_input);
-        let nonce = random_hex8_lower();
+        let scope_sha = sha256_hex16(&self.scope_input);
+        let body_sha = sha256_hex16(&self.body_input);
+        let nonce = random_hex16_lower();
         let s = compose_dna(&self.role, &caps_str, &scope_sha, &body_sha, &nonce);
         Dna::parse(s)
     }
 }
 
-fn sha256_hex8(input: &[u8]) -> String {
+fn sha256_hex16(input: &[u8]) -> String {
     let mut hasher = Sha256::new();
     hasher.update(input);
     let digest = hasher.finalize();
-    // First 4 bytes = 8 uppercase hex chars (matches DnaError::HexWidth check).
-    format!(
-        "{:02X}{:02X}{:02X}{:02X}",
-        digest[0], digest[1], digest[2], digest[3]
-    )
+    // Wave 7C: first 8 bytes = 16 uppercase hex chars (64-bit truncation).
+    // Was 32-bit; bumped to 64 for collision safety on growing substrate.
+    let mut s = String::with_capacity(16);
+    for b in digest.iter().take(8) {
+        s.push_str(&format!("{b:02X}"));
+    }
+    s
 }
 
-fn random_hex8_lower() -> String {
-    let mut buf = [0u8; 4];
+fn random_hex16_lower() -> String {
+    let mut buf = [0u8; 8];
     rand::thread_rng().fill_bytes(&mut buf);
-    format!("{:02x}{:02x}{:02x}{:02x}", buf[0], buf[1], buf[2], buf[3])
+    let mut s = String::with_capacity(16);
+    for b in buf.iter() {
+        s.push_str(&format!("{b:02x}"));
+    }
+    s
 }
 
 /// Trait every registerable entity must implement.
@@ -158,9 +164,10 @@ mod tests {
             .expect("build ok");
         assert_eq!(d.role(), "vm-managed");
         assert_eq!(d.caps(), "HZ-CX22-NB");
-        assert_eq!(d.scope_sha().len(), 8);
-        assert_eq!(d.body_sha().len(), 8);
-        assert_eq!(d.nonce().len(), 8);
+        // Wave 7C: 16-hex / 64-bit width.
+        assert_eq!(d.scope_sha().len(), 16);
+        assert_eq!(d.body_sha().len(), 16);
+        assert_eq!(d.nonce().len(), 16);
     }
 
     #[test]

@@ -31,4 +31,6 @@ pub use traits::*;
 
 // Re-export the wire-format SSoT from kei-shared so consumers don't need
 // to depend on it directly.
-pub use kei_shared::dna::{compose_dna, is_hex8, parse_dna, DnaError, ParsedDna};
+pub use kei_shared::dna::{compose_dna, is_hex16, parse_dna, DnaError, ParsedDna};
+#[allow(deprecated)]
+pub use kei_shared::dna::is_hex8;
