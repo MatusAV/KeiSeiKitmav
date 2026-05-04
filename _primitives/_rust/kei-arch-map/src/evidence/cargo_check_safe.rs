@@ -153,6 +153,17 @@ fn run_and_classify(child: std::process::Child) -> (bool, String) {
 
 /// Entry point. Runs `cargo check --workspace` on `manifest_dir` ONLY if
 /// `manifest_dir` (after canonicalize) matches one of `allowed_paths`.
+///
+/// Wave 7B: TOCTOU defence. After the allowlist check, `manifest_dir` is
+/// re-canonicalized and compared against the original canonical path. An
+/// attacker who could swap a symlink (e.g. `mv repo/_primitives/_rust
+/// repo/_primitives/_rust.bak && ln -s /tmp/evil repo/_primitives/_rust`)
+/// in the window between allowlist check and `Command::spawn`'s path
+/// resolution would now be caught: the second canonicalize resolves to
+/// the new target, and the equality check rejects spawn.
+///
+/// Window narrowing only — full elimination would require `fchdir(open(
+/// dir).fd)` via `nix::unistd` (not currently a workspace dep).
 pub fn check(
     manifest_dir: &Path,
     allowed_paths: &[PathBuf],
@@ -167,6 +178,22 @@ pub fn check(
     }
     if let Err(e) = verify_allowlist(&manifest_canon, allowed_paths, root) {
         return (false, e);
+    }
+    // TOCTOU re-canonicalize guard.
+    let recanon = match path_resolve::resolve_confined(manifest_dir, root) {
+        Ok(p) => p,
+        Err(e) => return (false, format!("toctou recheck: {}", e)),
+    };
+    if recanon != manifest_canon {
+        return (
+            false,
+            format!(
+                "TOCTOU: {} resolved to {} on first check, {} on recheck",
+                manifest_dir.display(),
+                manifest_canon.display(),
+                recanon.display(),
+            ),
+        );
     }
     let child = match spawn(&manifest_canon) {
         Ok(c) => c,

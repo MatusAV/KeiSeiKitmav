@@ -137,13 +137,24 @@ fn count_errors(stdout: &[u8]) -> u64 {
 }
 
 pub fn check(manifest_dir: &Path, root: &Path) -> (bool, String) {
-    let resolved = path_resolve::resolve(manifest_dir, root);
-    if !resolved.join("Cargo.toml").exists() {
+    // Wave 7B path-confine: `cargo check` runs build.rs, so a malicious
+    // PLAN.toml that escapes the repo via `..` or absolute path injection
+    // would be an RCE. Resolution proceeds in two stages:
+    //   1) ambient resolve (no canonicalize) so a missing dir gets the
+    //      friendly "no Cargo.toml at <path>" reason, not a canonicalize
+    //      ENOENT — preserves test contract.
+    //   2) canonicalize-then-confine on the dir if it exists.
+    let resolved_ambient = path_resolve::resolve(manifest_dir, root);
+    if !resolved_ambient.join("Cargo.toml").exists() {
         return (
             false,
-            format!("no Cargo.toml at {}", resolved.display()),
+            format!("no Cargo.toml at {}", resolved_ambient.display()),
         );
     }
+    let resolved = match path_resolve::resolve_confined(manifest_dir, root) {
+        Ok(p) => p,
+        Err(e) => return (false, e),
+    };
     let child = match spawn(&resolved) {
         Ok(c) => c,
         Err(e) => return (false, e),

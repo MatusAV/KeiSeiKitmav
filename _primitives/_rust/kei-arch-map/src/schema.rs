@@ -59,12 +59,30 @@ pub enum Evidence {
     },
     /// `cargo check --workspace --offline --message-format=json` produces
     /// zero compiler-error diagnostics, run from `manifest_dir`.
+    ///
+    /// SECURITY: this command compiles AND executes any `build.rs` in the
+    /// workspace. `manifest_dir` is path-confined to the repo root via
+    /// `resolve_confined` (rejects `..` traversal, absolute injection),
+    /// but there is NO additional allowlist gate — every Plan author who
+    /// uses this kind is implicitly trusting every workspace under the
+    /// repo. For workspaces requiring an explicit allowlist gate, use
+    /// `CargoCheckSafe`.
+    ///
+    /// Earlier versions of this doc claimed CargoCheckClean was
+    /// "manifest-resolve only via cargo metadata" — that was untrue;
+    /// both kinds run the full `cargo check` pipeline. The only
+    /// distinction is the allowlist requirement on `CargoCheckSafe`.
     CargoCheckClean { manifest_dir: PathBuf },
     /// `cargo check --workspace --offline --message-format=json` produces zero
     /// compiler-error messages. SAFETY: caller must whitelist `manifest_dir`;
     /// this kind runs build.rs of the workspace. Use only on internally-
-    /// controlled workspaces. External / untrusted manifests MUST use
-    /// `CargoCheckClean` (manifest-resolve only via cargo metadata).
+    /// controlled workspaces.
+    ///
+    /// Differs from `CargoCheckClean` ONLY in the explicit allowlist gate.
+    /// Both run the full cargo-check pipeline (compile + build.rs exec).
+    /// Wave 7B added a TOCTOU re-canonicalize guard: if `manifest_dir`
+    /// resolves to a different canonical path between the allowlist check
+    /// and the cargo spawn, the run is rejected.
     CargoCheckSafe {
         manifest_dir: PathBuf,
         /// Allowlist of paths (relative to repo root) authorised to run
