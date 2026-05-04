@@ -63,13 +63,28 @@ async function main(): Promise<void> {
 async function runStdio(server: McpServer): Promise<void> {
   process.stderr.write(`[keisei-mcp] stdio mode; ${server.listTools().length} tools\n`);
   process.stdin.setEncoding("utf8");
+  await dispatchStdio(server);
+}
+
+async function dispatchStdio(server: McpServer): Promise<void> {
+  let pending = "";
   for await (const chunk of process.stdin) {
-    for (const line of String(chunk).split("\n")) {
-      const trimmed = line.trim();
-      if (!trimmed) continue;
-      const resp = await dispatchStdioLine(server, trimmed);
-      process.stdout.write(resp + "\n");
+    pending += String(chunk);
+    let nl = pending.indexOf("\n");
+    while (nl !== -1) {
+      const frame = pending.slice(0, nl).trim();
+      pending = pending.slice(nl + 1);
+      if (frame.length > 0) {
+        const resp = await dispatchStdioLine(server, frame);
+        process.stdout.write(resp + "\n");
+      }
+      nl = pending.indexOf("\n");
     }
+  }
+  const tail = pending.trim();
+  if (tail.length > 0) {
+    const resp = await dispatchStdioLine(server, tail);
+    process.stdout.write(resp + "\n");
   }
 }
 
@@ -102,18 +117,8 @@ async function handleHttp(server: McpServer, req: import("node:http").IncomingMe
     return;
   }
   const MAX_BODY = 1 * 1024 * 1024; // 1 MiB
-  let total = 0;
-  const chunks: Buffer[] = [];
-  for await (const c of req) {
-    total += (c as Buffer).length;
-    if (total > MAX_BODY) {
-      res.writeHead(413, { "content-type": "application/json" });
-      res.end(JSON.stringify({ ok: false, error: { code: -32600, message: "request body exceeds 1 MiB" } }));
-      req.destroy();
-      return;
-    }
-    chunks.push(c as Buffer);
-  }
+  const chunks = await readBodyCapped(req, res, MAX_BODY);
+  if (chunks === null) return;
   try {
     const body = JSON.parse(Buffer.concat(chunks).toString("utf8")) as {
       tool: string;
@@ -132,6 +137,34 @@ async function handleHttp(server: McpServer, req: import("node:http").IncomingMe
     res.writeHead(400, { "content-type": "application/json" });
     res.end(JSON.stringify({ ok: false, error: { code: -32700, message: String(err) } }));
   }
+}
+
+async function readBodyCapped(
+  req: import("node:http").IncomingMessage,
+  res: import("node:http").ServerResponse,
+  maxBody: number,
+): Promise<Buffer[] | null> {
+  const chunks: Buffer[] = [];
+  let total = 0;
+  try {
+    for await (const c of req) {
+      total += (c as Buffer).length;
+      if (total > maxBody) {
+        res.writeHead(413, { "content-type": "application/json" });
+        res.end(JSON.stringify({ ok: false, error: { code: -32600, message: "request body exceeds 1 MiB" } }));
+        req.socket.destroy();
+        return null;
+      }
+      chunks.push(c as Buffer);
+    }
+  } catch (e) {
+    if (!res.headersSent) {
+      res.writeHead(400, { "content-type": "application/json" });
+      res.end(JSON.stringify({ ok: false, error: { code: -32700, message: `request stream error: ${String(e)}` } }));
+    }
+    return null;
+  }
+  return chunks;
 }
 
 main().catch((err: unknown) => {
