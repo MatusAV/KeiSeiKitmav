@@ -15,10 +15,10 @@ pub mod block;
 pub mod cli;
 pub mod diff;
 pub mod dna_block;
+pub mod formula;
 pub mod encyclopedia;
 pub mod encyclopedia_render;
 pub mod encyclopedia_time;
-pub mod formula;
 pub mod handlers;
 pub mod index_substrate;
 pub mod lookup;
@@ -31,15 +31,12 @@ pub mod secrets;
 pub mod secrets_handler;
 pub mod stats;
 pub mod status;
+pub mod status_truth;
 pub mod store;
 
 pub use block::{Block, BlockType};
 pub use diff::{diff_blocks, BlockDiff};
 pub use dna_block::{compose_for_block, compose_for_block_with_nonce};
-pub use formula::{
-    formula_sha, load_formula, register_formula, BlockFormula, EffectKind, FormulaSource,
-    Predicate, SymbolKind, TypeAtom, TypeSignature,
-};
 pub use registry::{find_by_path, get, list, list_by_type, mark_superseded, register};
 pub use related::{find_related, RelatedHit};
 // Both `secrets` and `status` expose a `render_ascii` function — keep them
@@ -50,3 +47,7 @@ pub use secrets::{compute_secrets_report, SecretsReport};
 pub use stats::{compute_stats, Stats};
 pub use status::{compute_status, Status};
 pub use store::{open_db, SCHEMA_VERSION};
+pub use formula::{
+    BlockFormula, EffectKind, FormulaSource, Predicate, SymbolKind, TypeAtom, TypeSignature,
+    load_formula, register_formula,
+};

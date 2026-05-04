@@ -79,6 +79,12 @@ pub fn dispatch(cmd: Command) -> Result<Outcome> {
             scan_root,
             format,
         } => crate::secrets_handler::handle_secrets(env_files, scan_root, format),
+        // Phase 3 Layer 3 — `RegisterStatusTruth` is intercepted in
+        // `main.rs` before dispatch (keeps the registry-pipe cube
+        // self-contained). This arm is unreachable in practice; if a
+        // caller invokes `dispatch` directly it returns Ok(Outcome::Ok)
+        // so the binary never panics on the path.
+        Command::RegisterStatusTruth { .. } => Ok(Outcome::Ok),
     }
 }
 

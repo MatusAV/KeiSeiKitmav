@@ -184,4 +184,15 @@ pub enum Command {
         #[arg(long, default_value = "ascii")]
         format: String,
     },
+
+    /// Phase 3 Layer 3 — pipe a RULE 0.16 STATUS-TRUTH MARKER (from
+    /// `--input <file>` or stdin via `-`) into `cleanup_findings`.
+    RegisterStatusTruth {
+        #[arg(long)]
+        db: Option<PathBuf>,
+        #[arg(long)]
+        block_id: String,
+        #[arg(long)]
+        input: PathBuf,
+    },
 }

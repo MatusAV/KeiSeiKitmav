@@ -63,5 +63,26 @@ Either downgrade shipped to 'partial'/'scaffolding' or remove the stubs."
     exit 0
 fi
 
+# Phase 3 Layer 3 — pipe STATUS-TRUTH MARKER → kei-registry.
+# Soft-fail: any registry write error is logged and ignored. The hook
+# never blocks a tool call because of a registry hiccup.
+if [ "${KEI_STATUS_TRUTH_BYPASS:-0}" != "1" ]; then
+    REPO_ROOT_GUESS="$(cd "$(dirname "$0")/.." 2>/dev/null && pwd)"
+    KEI_REGISTRY_BIN="${KEI_REGISTRY_BIN:-${REPO_ROOT_GUESS}/_primitives/_rust/target/release/kei-registry}"
+    KEI_REGISTRY_DB="${KEI_REGISTRY_DB:-${HOME}/.claude/registry.sqlite}"
+    MARKER_TEXT=$(printf '%s' "$RESPONSE" \
+        | awk '/=== STATUS-TRUTH MARKER ===/,/^$/' 2>/dev/null || true)
+    if [ -x "$KEI_REGISTRY_BIN" ] && [ -n "$MARKER_TEXT" ]; then
+        AGENT_ID_TAG="${AGENT_ID:-$(printf '%s' "$INPUT" | jq -r '.session_id // "unknown"' 2>/dev/null)}"
+        BLOCK_ID="${AGENT_ID_TAG}-$(date +%s)"
+        printf '%s' "$MARKER_TEXT" \
+            | "$KEI_REGISTRY_BIN" register-status-truth \
+                --db "$KEI_REGISTRY_DB" \
+                --block-id "$BLOCK_ID" \
+                --input - 2>>/tmp/agent-status-truth.log \
+            || true
+    fi
+fi
+
 log_block "OK: shipped=$SHIPPED, stubs=${STUB_COUNT:-0} (consistent)."
 exit 0

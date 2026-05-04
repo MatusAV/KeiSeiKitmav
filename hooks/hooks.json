@@ -53,6 +53,11 @@
             "type": "command",
             "command": "${CLAUDE_PLUGIN_ROOT}/hooks/agent-capability-check.sh",
             "statusMessage": "agent-capability-check (Agent Substrate v1, phase 4)..."
+          },
+          {
+            "type": "command",
+            "command": "${CLAUDE_PLUGIN_ROOT}/hooks/arch-verify-precommit.sh",
+            "statusMessage": "kei-arch-map verify (Phase 3 layer 2 — bypass: ARCH_VERIFY_BYPASS=1)..."
           }
         ]
       },
