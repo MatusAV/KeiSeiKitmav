@@ -1,11 +1,22 @@
 use super::path_resolve;
 use serde::Deserialize;
+use std::io::Read;
 use std::path::Path;
 use std::process::{Command, Stdio};
+use std::thread;
 use std::time::Duration;
 use wait_timeout::ChildExt;
 
 const TIMEOUT: Duration = Duration::from_secs(300);
+
+/// Captured cargo output. Mirrors `std::process::Output` but built from
+/// background-drained pipes so the child cannot deadlock on a full
+/// 64 KiB pipe buffer when JSON output exceeds it.
+struct DrainedOutput {
+    status: std::process::ExitStatus,
+    stdout: Vec<u8>,
+    stderr: Vec<u8>,
+}
 
 #[derive(Debug, Deserialize)]
 struct Diag {
@@ -36,15 +47,36 @@ fn spawn(dir: &Path) -> Result<std::process::Child, String> {
         .map_err(|e| format!("spawn cargo: {}", e))
 }
 
-/// Wait with timeout. On expiry, kill the child and return Err.
-fn wait_capped(mut child: std::process::Child) -> Result<std::process::Output, String> {
-    match child.wait_timeout(TIMEOUT) {
-        Ok(Some(_status)) => child
-            .wait_with_output()
-            .map_err(|e| format!("wait_with_output: {}", e)),
+/// Spawn a thread that reads a pipe to EOF into a Vec<u8>.
+fn drain<R: Read + Send + 'static>(mut r: R) -> thread::JoinHandle<Vec<u8>> {
+    thread::spawn(move || {
+        let mut buf = Vec::new();
+        let _ = r.read_to_end(&mut buf);
+        buf
+    })
+}
+
+/// Wait with timeout while concurrently draining stdout+stderr in
+/// background threads. Without the drains, cargo's JSON stream fills the
+/// 64 KiB pipe buffer on a large workspace and the child blocks on write,
+/// causing a false timeout.
+fn wait_capped(mut child: std::process::Child) -> Result<DrainedOutput, String> {
+    let stdout = child.stdout.take().expect("stdout piped");
+    let stderr = child.stderr.take().expect("stderr piped");
+    let stdout_h = drain(stdout);
+    let stderr_h = drain(stderr);
+    let res = child.wait_timeout(TIMEOUT);
+    match res {
+        Ok(Some(status)) => {
+            let out = stdout_h.join().unwrap_or_default();
+            let err = stderr_h.join().unwrap_or_default();
+            Ok(DrainedOutput { status, stdout: out, stderr: err })
+        }
         Ok(None) => {
             let _ = child.kill();
             let _ = child.wait();
+            let _ = stdout_h.join();
+            let _ = stderr_h.join();
             Err(format!("cargo check exceeded {}s", TIMEOUT.as_secs()))
         }
         Err(e) => Err(format!("wait_timeout: {}", e)),

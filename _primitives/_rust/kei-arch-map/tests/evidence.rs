@@ -114,6 +114,30 @@ fn cargo_check_clean_skipped_no_manifest() {
 }
 
 #[test]
+fn cargo_check_clean_drains_pipe_under_timeout() {
+    // Regression for #49: wait_timeout without pipe drain deadlocked on
+    // workspaces whose JSON stream exceeded the 64 KiB pipe buffer. Even
+    // a one-crate workspace exercises the new draining wait path; the
+    // assertion here is "completes well under TIMEOUT (300s)".
+    let td = TempDir::new().unwrap();
+    write(
+        td.path(),
+        "Cargo.toml",
+        "[package]\nname = \"deadlock_probe\"\nversion = \"0.0.1\"\nedition = \"2021\"\n\n[lib]\npath = \"src/lib.rs\"\n",
+    );
+    write(td.path(), "src/lib.rs", "// empty crate\n");
+    let started = std::time::Instant::now();
+    let (ok, reason) = cargo_check(".", td.path());
+    let elapsed = started.elapsed();
+    assert!(ok, "cargo check should pass on empty crate; reason={}", reason);
+    assert!(
+        elapsed < std::time::Duration::from_secs(30),
+        "cargo check took {:?}, expected <30s (drain regression?)",
+        elapsed
+    );
+}
+
+#[test]
 fn http_status_rejects_loopback_url() {
     let (ok, reason) = http_status("http://127.0.0.1:80/", &[200]);
     assert!(!ok);
