@@ -13,6 +13,7 @@
 
 pub mod coverage;
 pub mod emit;
+pub mod infer;
 pub mod project;
 pub mod serialize;
 pub mod walker;
@@ -20,4 +21,4 @@ pub mod walker;
 pub use coverage::{compute as compute_coverage, Coverage};
 pub use emit::{emit_plan, render_plan_string, DerivedClaim, DerivedModule, DerivedPlan};
 pub use project::{predicate_to_evidence, EvidenceClaim};
-pub use walker::{discover_formulas, FormulaDecl};
+pub use walker::{discover_formulas, walk_blocks, FormulaDecl};

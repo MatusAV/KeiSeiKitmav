@@ -119,3 +119,48 @@ fn parse_invariants(values: &[toml::Value]) -> Result<Vec<Predicate>> {
     }
     Ok(out)
 }
+
+/// Walk `workspace_root` for the canonical block-source files used by the
+/// PR-4 inference pass: every `_primitives/_rust/*/src/lib.rs`,
+/// `_primitives/_rust/*/src/main.rs`, plus every `hooks/*.sh`. Output is
+/// sorted by path for deterministic inference order.
+pub fn walk_blocks(workspace_root: &Path) -> Result<Vec<PathBuf>> {
+    let mut out = Vec::new();
+    collect_rust_block_sources(workspace_root, &mut out);
+    collect_hook_scripts(workspace_root, &mut out);
+    out.sort();
+    Ok(out)
+}
+
+fn collect_rust_block_sources(workspace_root: &Path, out: &mut Vec<PathBuf>) {
+    let primitives = workspace_root.join("_primitives").join("_rust");
+    if !primitives.is_dir() {
+        return;
+    }
+    let crates = match std::fs::read_dir(&primitives) {
+        Ok(rd) => rd,
+        Err(_) => return,
+    };
+    for crate_entry in crates.flatten() {
+        let src = crate_entry.path().join("src");
+        for fname in &["lib.rs", "main.rs"] {
+            let candidate = src.join(fname);
+            if candidate.is_file() {
+                out.push(candidate);
+            }
+        }
+    }
+}
+
+fn collect_hook_scripts(workspace_root: &Path, out: &mut Vec<PathBuf>) {
+    let hooks = workspace_root.join("hooks");
+    if !hooks.is_dir() {
+        return;
+    }
+    for entry in WalkDir::new(&hooks).max_depth(1).into_iter().filter_map(|e| e.ok()) {
+        let path = entry.path();
+        if path.is_file() && path.extension().and_then(|e| e.to_str()) == Some("sh") {
+            out.push(path.to_path_buf());
+        }
+    }
+}

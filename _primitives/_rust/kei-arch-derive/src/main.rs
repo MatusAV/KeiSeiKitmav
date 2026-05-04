@@ -45,16 +45,13 @@ enum Cmd {
 
 fn main() -> Result<()> {
     let cli = Cli::parse();
-    // Touch `registry` so clap-bound but not-yet-read field doesn't warn;
-    // PR-4 will replace this with a real registry-SQLite reader.
-    let _registry = cli.registry.as_str();
     match cli.cmd {
         Cmd::Emit { out, check_format } => run_emit(&cli.workspace, &out, check_format),
         Cmd::Coverage {
             min_presence,
             min_agreement,
         } => run_coverage(&cli.workspace, min_presence, min_agreement),
-        Cmd::Infer => run_infer(),
+        Cmd::Infer => run_infer(&cli.workspace, cli.registry.as_str()),
     }
 }
 
@@ -108,7 +105,25 @@ fn run_coverage(workspace: &Path, min_presence: f64, min_agreement: f64) -> Resu
     Ok(())
 }
 
-fn run_infer() -> Result<()> {
-    println!("infer: deferred to PR-4 (mutation-tested body→effects pass)");
+fn run_infer(workspace: &Path, registry_db: &str) -> Result<()> {
+    let db_path = expand_registry_path(registry_db);
+    let count = kei_arch_derive::infer::run(workspace, &db_path)?;
+    println!(
+        "[OK] inferred {} formula(s) from {} into {}",
+        count,
+        workspace.display(),
+        db_path.display()
+    );
     Ok(())
+}
+
+/// Expand a leading `~/` to the user's home directory. Returns the input
+/// path verbatim when no expansion is needed.
+fn expand_registry_path(raw: &str) -> PathBuf {
+    if let Some(rest) = raw.strip_prefix("~/") {
+        if let Some(home) = std::env::var_os("HOME") {
+            return PathBuf::from(home).join(rest);
+        }
+    }
+    PathBuf::from(raw)
 }
