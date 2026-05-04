@@ -1,16 +1,16 @@
-use crate::schema::{self, Module, Plan};
+use crate::runner;
 use anyhow::Result;
+use kei_arch_map::schema::{self, Module, Plan};
 use std::fmt::Write as _;
 use std::path::Path;
 
 const VERSION: &str = env!("CARGO_PKG_VERSION");
 
 pub fn run(plan_path: &Path, out_path: &Path) -> Result<()> {
+    let root = runner::repo_root(plan_path)?;
+    runner::confine_out(out_path, &root)?;
     let plan = schema::load(plan_path)?;
     let body = render_plan(&plan);
-    if let Some(parent) = out_path.parent() {
-        std::fs::create_dir_all(parent)?;
-    }
     std::fs::write(out_path, body)?;
     println!("wrote {}", out_path.display());
     Ok(())

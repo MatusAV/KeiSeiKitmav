@@ -1,14 +1,14 @@
 # KeiSeiKit DNA Encyclopedia
 
-> Auto-generated from kei-registry. Last regenerated: 2026-05-03T18:27:00Z.
-> Total blocks: 566. Per-type breakdown:
+> Auto-generated from kei-registry. Last regenerated: 2026-05-04T03:14:03Z.
+> Total blocks: 572. Per-type breakdown:
 
 | Type | Count |
 |---|---:|
 | atom | 149 |
 | hook | 53 |
 | primitive | 116 |
-| rule | 180 |
+| rule | 186 |
 | skill | 68 |
 
 ---
@@ -22,7 +22,7 @@ Sorted alphabetically by name.
 | firewall-diff::firewall-diff | primitive::_::cfe51e… | _primitives/_rust/firewall-diff/Cargo.toml | 07f0e46a |
 | frustration-matrix::frustration-matrix | primitive::_::b6ee34… | _primitives/_rust/frustration-matrix/Cargo.toml | db99150c |
 | kei-agent-runtime::kei-agent-runtime | primitive::_::18437e… | _primitives/_rust/kei-agent-runtime/Cargo.toml | 76e04f24 |
-| kei-arch-map::kei-arch-map | primitive::_::93d979… | _primitives/_rust/kei-arch-map/Cargo.toml | 489c0d17 |
+| kei-arch-map::kei-arch-map | primitive::_::93d979… | _primitives/_rust/kei-arch-map/Cargo.toml | ec790973 |
 | kei-artifact::kei-artifact | primitive::_::111b67… | _primitives/_rust/kei-artifact/Cargo.toml | 8742aade |
 | kei-atom-discovery::kei-atom-discovery | primitive::_::85ce60… | _primitives/_rust/kei-atom-discovery/Cargo.toml | bb5db6ab |
 | kei-auth-apple::kei-auth-apple | primitive::_::95b0b0… | _primitives/_rust/kei-auth-apple/Cargo.toml | 42f38a75 |
@@ -211,7 +211,7 @@ Sorted alphabetically by name.
 | Web Effects Skill | md | skill::md::78ada116:… | skills/web-effects/SKILL.md |
 | nano-banana | md | skill::md::840e10fb:… | skills/nano-banana/SKILL.md |
 
-## Rule (180)
+## Rule (186)
 
 Sorted alphabetically by name.
 
@@ -712,6 +712,17 @@ Sorted alphabetically by name.
 |---|---|---|
 | recurrence-escalate::why | rule::_::42e534f5::a… | a50608a6 |
 
+### root-cause
+
+| Section | DNA prefix | Body sha8 |
+|---|---|---|
+| root-cause-before-return::incident-2026-05-04 | rule::_::ea82138a::3… | 37d75466 |
+| root-cause-before-return::relation-to-other-rules | rule::_::bf535bd5::f… | fc0e5650 |
+| root-cause-before-return::rule-lock | rule::_::a4bce70b::d… | d7b6de9d |
+| root-cause-before-return::severity | rule::_::e5ec29d3::5… | 5c64e1d3 |
+| root-cause-before-return::the-rule | rule::_::80746905::f… | fdcf128f |
+| root-cause-before-return::triggers | rule::_::ed6eba51::8… | 870ae69e |
+
 ### secrets-single
 
 | Section | DNA prefix | Body sha8 |
@@ -1141,7 +1152,7 @@ Sorted alphabetically by name.
 - `frustration-matrix::frustration-matrix` — 2 versions: db99150c → db99150c
 - `kei-agent-runtime` — 3 versions: 708830d4 → 33b44d6c → 841ac805
 - `kei-agent-runtime::kei-agent-runtime` — 2 versions: 76e04f24 → 76e04f24
-- `kei-arch-map::kei-arch-map` — 6 versions: 2e9d962a → 8f857390 → 31c4476e → a5a88192 → 56108075 → 489c0d17
+- `kei-arch-map::kei-arch-map` — 49 versions: 2e9d962a → 8f857390 → 31c4476e → a5a88192 → 56108075 → 489c0d17 → 0249bfe4 → 33cddca1 → 9fda4ce7 → 6dbc8cc7 → d6438878 → 2389b369 → aac0b7e2 → 3dd66c1b → 43d00213 → a78aab5e → b26c1553 → 288a06ff → c0af043e → 00bfa19d → 67dae440 → 6b450504 → 631c4f6d → abac7b08 → b9b2ae96 → 4021c4ef → 26742798 → 05e55a4d → 07a38bc2 → 2641fb3f → acfac7a8 → b6a985d1 → 616d676f → 83596ed7 → 19db5b14 → f9cc92dd → 12f810ca → cf0e7d83 → 8b4d9c93 → e21c155b → b149f5a3 → 5d343463 → 1bc51349 → 2f4ae1e3 → a0991b1c → 5c1b60be → 312c7233 → bf8d22c7 → ec790973
 - `kei-artifact` — 3 versions: 2c55b84a → a33abf97 → 50e8c9cd
 - `kei-artifact::kei-artifact` — 2 versions: 8742aade → 8742aade
 - `kei-atom-discovery` — 3 versions: 0d532c9f → ca9202b5 → e1fde01b

@@ -34,24 +34,33 @@ pub struct Claim {
     pub evidence: Evidence,
 }
 
+/// Allowlisted evidence kinds. NO raw shell.
 #[derive(Debug, Serialize, Deserialize)]
 #[serde(tag = "kind", rename_all = "snake_case")]
 pub enum Evidence {
-    /// File exists at `path` (resolved relative to plan parent dir).
+    /// File exists at `path` (relative to repo root).
     FileExists { path: PathBuf },
-    /// `pattern` (regex) matches in file `file`.
+    /// Regex matches in file. Pattern compiled with size_limit cap.
     RegexMatch { file: PathBuf, pattern: String },
-    /// `cmd` exits with `expected` (default 0). Run via `sh -c`.
-    /// SECURITY: cmd is fully trusted (PLAN.toml is in-repo, version-controlled).
-    ExitCode {
-        cmd: String,
-        #[serde(default)]
-        expected: i32,
+    /// Count lines matching regex in file equals `expected`.
+    /// Replaces the `grep -c` ExitCode pattern.
+    GrepCount {
+        file: PathBuf,
+        pattern: String,
+        expected: u64,
     },
-    /// Two integer-producing commands' stdouts must be equal.
-    /// Both run via `sh -c`. Stdouts trimmed and parsed as i64.
-    CountEq { cmd_a: String, cmd_b: String },
-    /// HTTP GET `url` returns status in `expected` (default [200]).
+    /// File size in bytes is in `range` (inclusive). Use `[N, N]` for exact.
+    FileSize { path: PathBuf, range: [u64; 2] },
+    /// Dotted JSON path equals `expected` string. No wildcards.
+    JsonField {
+        file: PathBuf,
+        path: String,
+        expected: String,
+    },
+    /// `cargo check --workspace --offline --message-format=json` produces
+    /// zero compiler-error diagnostics, run from `manifest_dir`.
+    CargoCheckClean { manifest_dir: PathBuf },
+    /// HTTP GET URL returns one of `expected` codes. SSRF-hardened.
     HttpStatus {
         url: String,
         #[serde(default = "default_2xx")]
@@ -73,8 +82,10 @@ pub fn evidence_kind(ev: &Evidence) -> &'static str {
     match ev {
         Evidence::FileExists { .. } => "file_exists",
         Evidence::RegexMatch { .. } => "regex_match",
-        Evidence::ExitCode { .. } => "exit_code",
-        Evidence::CountEq { .. } => "count_eq",
+        Evidence::GrepCount { .. } => "grep_count",
+        Evidence::FileSize { .. } => "file_size",
+        Evidence::JsonField { .. } => "json_field",
+        Evidence::CargoCheckClean { .. } => "cargo_check_clean",
         Evidence::HttpStatus { .. } => "http_status",
     }
 }
@@ -83,25 +94,52 @@ pub fn evidence_kind(ev: &Evidence) -> &'static str {
 pub fn evidence_repr(ev: &Evidence) -> String {
     match ev {
         Evidence::FileExists { path } => format!("file_exists: {}", path.display()),
-        Evidence::RegexMatch { file, pattern } => {
-            format!("regex `{}` in {}", truncate(pattern, 40), file.display())
-        }
-        Evidence::ExitCode { cmd, expected } => {
-            format!("exit {} from `{}`", expected, truncate(cmd, 60))
-        }
-        Evidence::CountEq { cmd_a, cmd_b } => {
-            format!("`{}` == `{}`", truncate(cmd_a, 30), truncate(cmd_b, 30))
+        Evidence::RegexMatch { file, pattern } => repr_regex(file, pattern),
+        Evidence::GrepCount { file, pattern, expected } => repr_grep(file, pattern, *expected),
+        Evidence::FileSize { path, range } => repr_size(path, range),
+        Evidence::JsonField { file, path, expected } => repr_json(file, path, expected),
+        Evidence::CargoCheckClean { manifest_dir } => {
+            format!("cargo_check_clean({})", manifest_dir.display())
         }
         Evidence::HttpStatus { url, expected } => {
-            format!("GET {} -> {:?}", url, expected)
+            format!("GET {} -> {:?}", truncate(url, 60), expected)
         }
     }
 }
 
-fn truncate(s: &str, n: usize) -> String {
-    if s.len() <= n {
-        s.to_string()
+fn repr_regex(file: &std::path::Path, pattern: &str) -> String {
+    format!("regex `{}` in {}", truncate(pattern, 40), file.display())
+}
+
+fn repr_grep(file: &std::path::Path, pattern: &str, expected: u64) -> String {
+    format!(
+        "grep_count `{}` in {} == {}",
+        truncate(pattern, 30),
+        file.display(),
+        expected
+    )
+}
+
+fn repr_size(path: &std::path::Path, range: &[u64; 2]) -> String {
+    format!("size({}) in [{}..={}]", path.display(), range[0], range[1])
+}
+
+fn repr_json(file: &std::path::Path, path: &str, expected: &str) -> String {
+    format!(
+        "json `{}`.{} == `{}`",
+        file.display(),
+        path,
+        truncate(expected, 30)
+    )
+}
+
+/// UTF-8-safe truncate by character count, appending "…" if truncated.
+pub(crate) fn truncate(s: &str, n: usize) -> String {
+    let mut chars = s.chars();
+    let head: String = chars.by_ref().take(n).collect();
+    if chars.next().is_some() {
+        format!("{}…", head)
     } else {
-        format!("{}…", &s[..n])
+        head
     }
 }

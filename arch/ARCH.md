@@ -14,7 +14,7 @@ Rust workspace manifest. Inherits authors/license/etc to ~104 member crates.
 | Claim | Description | Evidence kind |
 |---|---|---|
 | `workspace-package-has-authors` | [workspace.package] declares authors (100+ crates inherit via authors.workspace=true) | `regex_match` |
-| `cargo-check-workspace-passes` | cargo check --workspace exits 0 (no missing deps, no broken inheritance) | `exit_code` |
+| `cargo-check-workspace-passes` | cargo check --workspace produces zero compiler errors (structured JSON parse, NOT shell) | `cargo_check_clean` |
 
 ## `release-yml`
 
@@ -48,7 +48,7 @@ Numeric claims in README/ARCHITECTURE that historically drifted (RULE 0.18).
 
 | Claim | Description | Evidence kind |
 |---|---|---|
-| `readme-crate-count-matches` | README/ARCHITECTURE crate count matches actual workspace member count | `exit_code` |
+| `readme-mentions-rust-crate-count` | README.md mentions a Rust crate count exactly once. Phase 2 will tighten via DNA layer. | `grep_count` |
 
 ## `ts-versions`
 
@@ -59,7 +59,8 @@ TypeScript workspace version coherence (root vs child packages).
 
 | Claim | Description | Evidence kind |
 |---|---|---|
-| `ts-root-version-matches-mcp-server` | _ts_packages/package.json version matches _ts_packages/packages/mcp-server/package.json | `exit_code` |
+| `ts-root-version-is-0-14-5` | _ts_packages/package.json declares version 0.14.5 | `json_field` |
+| `ts-mcp-server-version-is-0-14-5` | _ts_packages/packages/mcp-server/package.json declares version 0.14.5 | `json_field` |
 
 ## `keigit-org-presence`
 

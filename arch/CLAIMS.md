@@ -5,12 +5,13 @@
 | Module | Claim | Status | Evidence |
 |---|---|---|---|
 | `cargo-workspace` | `workspace-package-has-authors` | PASS | `regex `(?m)^authors\s*=\s*\[` in _primitives/_rust/Cargo.toml` |
-| `cargo-workspace` | `cargo-check-workspace-passes` | PASS | `exit 0 from `cd _primitives/_rust && cargo check --workspace --offline 2>…`` |
+| `cargo-workspace` | `cargo-check-workspace-passes` | FAIL | `cargo_check_clean(_primitives/_rust)` |
 | `release-yml` | `release-yml-references-keigit-token` | FAIL | `regex `secrets\.KEIGIT_TOKEN` in .github/workflows/release.yml` |
 | `mcp-server` | `mcp-server-stdio-buffers-partial-frames` | FAIL | `regex `let pending` in _ts_packages/packages/mcp-server/src/index.ts` |
 | `mcp-server` | `mcp-server-http-body-cap-handler-wrapped` | FAIL | `regex `try\s*\{[\s\S]{0,200}for\s+await` in _ts_packages/packages/mcp-server/src/index.ts` |
-| `docs-claims` | `readme-crate-count-matches` | PASS | `exit 0 from `actual=$(grep -cE '^\s*"[a-z][a-z0-9_-]*",' _primitives/_rus…`` |
-| `ts-versions` | `ts-root-version-matches-mcp-server` | FAIL | `exit 0 from `v_root=$(grep -oE '"version":\s*"[^"]+"' _ts_packages/packag…`` |
+| `docs-claims` | `readme-mentions-rust-crate-count` | PASS | `grep_count `[0-9]+ Rust` in README.md == 1` |
+| `ts-versions` | `ts-root-version-is-0-14-5` | FAIL | `json `_ts_packages/package.json`.version == `0.14.5`` |
+| `ts-versions` | `ts-mcp-server-version-is-0-14-5` | PASS | `json `_ts_packages/packages/mcp-server/package.json`.version == `0.14.5`` |
 | `keigit-org-presence` | `keigit-user-keisei-200` | PASS | `GET https://keigit.com/api/v1/users/keisei -> [200]` |
 
-Total: 8 | PASS: 4 | FAIL: 4
+Total: 9 | PASS: 4 | FAIL: 5

@@ -2,10 +2,12 @@ use anyhow::Result;
 use clap::{Parser, Subcommand};
 use std::path::PathBuf;
 
-mod schema;
-mod verify;
-mod render;
+// Bin uses local sibling modules for orchestration (`runner`, `plan`, `render`)
+// and pulls evidence checkers + schema from the library facade. This avoids
+// double-compilation of `evidence/` and `schema.rs`.
 mod plan;
+mod render;
+mod runner;
 
 #[derive(Parser)]
 #[command(name = "kei-arch-map", about = "Self-validating architecture map")]
@@ -49,7 +51,7 @@ enum Cmd {
 fn main() -> Result<()> {
     let cli = Cli::parse();
     match cli.cmd {
-        Cmd::Verify { plan } => verify::run(&plan),
+        Cmd::Verify { plan } => runner::run(&plan),
         Cmd::Render { plan, out } => render::run(&plan, &out),
         Cmd::Plan { plan, out } => plan::run(&plan, &out),
         Cmd::AddClaim {

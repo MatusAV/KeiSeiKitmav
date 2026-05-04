@@ -1,16 +1,17 @@
-use crate::schema::{self, Claim, Evidence, Plan};
-use crate::verify;
+use crate::runner;
 use anyhow::{anyhow, Result};
+use fs2::FileExt;
+use kei_arch_map::schema::{self, Evidence, Plan};
 use std::fmt::Write as _;
+use std::fs::OpenOptions;
 use std::path::Path;
+use toml_edit::DocumentMut;
 
 pub fn run(plan_path: &Path, out_path: &Path) -> Result<()> {
+    let root = runner::repo_root(plan_path)?;
+    runner::confine_out(out_path, &root)?;
     let plan = schema::load(plan_path)?;
-    let root = verify::repo_root(plan_path);
     let body = render_audit(&plan, &root);
-    if let Some(parent) = out_path.parent() {
-        std::fs::create_dir_all(parent)?;
-    }
     std::fs::write(out_path, body)?;
     println!("wrote {}", out_path.display());
     Ok(())
@@ -34,7 +35,7 @@ fn render_rows(out: &mut String, plan: &Plan, root: &Path) -> (usize, usize, usi
     for module in &plan.modules {
         for claim in &module.claims {
             total += 1;
-            let (ok, _reason) = verify::check_claim(claim, root);
+            let (ok, _r) = runner::check_claim(claim, root);
             let status = if ok { "PASS" } else { "FAIL" };
             if ok {
                 pass += 1;
@@ -45,16 +46,16 @@ fn render_rows(out: &mut String, plan: &Plan, root: &Path) -> (usize, usize, usi
             let _ = writeln!(
                 out,
                 "| `{}` | `{}` | {} | `{}` |",
-                module.id,
-                claim.id,
-                status,
-                md_escape(&repr)
+                module.id, claim.id, status, md_escape(&repr)
             );
         }
     }
     (total, pass, fail)
 }
 
+/// Append a claim to PLAN.toml with exclusive lock + format-preserving
+/// re-parse + atomic rename. Format-preservation is best-effort: existing
+/// content stays byte-for-byte; the new block is appended.
 pub fn add_claim(
     plan_path: &Path,
     module_id: &str,
@@ -62,32 +63,131 @@ pub fn add_claim(
     description: &str,
     evidence_json: &str,
 ) -> Result<()> {
-    let mut plan = schema::load(plan_path)?;
     let evidence: Evidence = serde_json::from_str(evidence_json)
         .map_err(|e| anyhow!("parse evidence_json: {}", e))?;
-    let module = plan
-        .modules
-        .iter_mut()
-        .find(|m| m.id == module_id)
-        .ok_or_else(|| anyhow!("module `{}` not found in plan", module_id))?;
-    if module.claims.iter().any(|c| c.id == claim_id) {
-        return Err(anyhow!(
-            "claim `{}` already exists in module `{}`",
-            claim_id,
-            module_id
-        ));
-    }
-    module.claims.push(Claim {
-        id: claim_id.to_string(),
-        description: description.to_string(),
-        evidence,
-    });
-    let serialized = toml::to_string_pretty(&plan)?;
-    std::fs::write(plan_path, serialized)?;
-    println!("appended {}::{} to {}", module_id, claim_id, plan_path.display());
+    let original = locked_read(plan_path)?;
+    let doc: DocumentMut = original
+        .parse()
+        .map_err(|e| anyhow!("parse {}: {}", plan_path.display(), e))?;
+    ensure_unique(&doc, module_id, claim_id)?;
+    let block = render_claim_block(claim_id, description, &evidence)?;
+    let combined = combine(&original, &block);
+    // Validate the combined output round-trips.
+    let _verify: DocumentMut = combined
+        .parse()
+        .map_err(|e| anyhow!("re-parse after append: {}", e))?;
+    atomic_write(plan_path, &combined)?;
+    println!(
+        "appended {}::{} to {}",
+        module_id, claim_id, plan_path.display()
+    );
     Ok(())
+}
+
+/// Acquire exclusive lock and read entire file.
+fn locked_read(plan_path: &Path) -> Result<String> {
+    let f = OpenOptions::new()
+        .read(true)
+        .open(plan_path)
+        .map_err(|e| anyhow!("open {}: {}", plan_path.display(), e))?;
+    FileExt::lock_exclusive(&f)
+        .map_err(|e| anyhow!("lock {}: {}", plan_path.display(), e))?;
+    let s = std::fs::read_to_string(plan_path)
+        .map_err(|e| anyhow!("read {}: {}", plan_path.display(), e))?;
+    let _ = FileExt::unlock(&f);
+    Ok(s)
+}
+
+/// Verify (module_id, claim_id) is not already declared.
+fn ensure_unique(doc: &DocumentMut, module_id: &str, claim_id: &str) -> Result<()> {
+    let modules = doc
+        .get("module")
+        .and_then(|i| i.as_array_of_tables())
+        .ok_or_else(|| anyhow!("plan has no [[module]] entries"))?;
+    let mut module_seen = false;
+    for m in modules.iter() {
+        let id = m.get("id").and_then(|v| v.as_str()).unwrap_or("");
+        if id != module_id {
+            continue;
+        }
+        module_seen = true;
+        if let Some(claims) = m.get("claim").and_then(|i| i.as_array_of_tables()) {
+            for c in claims.iter() {
+                let cid = c.get("id").and_then(|v| v.as_str()).unwrap_or("");
+                if cid == claim_id {
+                    return Err(anyhow!(
+                        "claim `{}` already exists in module `{}`",
+                        claim_id, module_id
+                    ));
+                }
+            }
+        }
+    }
+    if !module_seen {
+        return Err(anyhow!("module `{}` not found in plan", module_id));
+    }
+    Ok(())
+}
+
+/// Render a `[[module.claim]]` block as TOML text.
+fn render_claim_block(
+    claim_id: &str,
+    description: &str,
+    evidence: &Evidence,
+) -> Result<String> {
+    let evidence_toml = toml::to_string(evidence)
+        .map_err(|e| anyhow!("serialize evidence: {}", e))?;
+    let mut block = String::new();
+    let _ = writeln!(block, "\n[[module.claim]]");
+    let _ = writeln!(block, "id = {}", quote(claim_id));
+    let _ = writeln!(block, "description = {}", quote(description));
+    let _ = writeln!(block, "{}", inline_evidence(&evidence_toml));
+    Ok(block)
+}
+
+fn combine(original: &str, block: &str) -> String {
+    let mut s = original.to_string();
+    if !s.ends_with('\n') {
+        s.push('\n');
+    }
+    s.push_str(block);
+    s
+}
+
+fn quote(s: &str) -> String {
+    let escaped = s.replace('\\', "\\\\").replace('"', "\\\"");
+    format!("\"{}\"", escaped)
+}
+
+/// Convert serialized evidence (multi-line `key = value`) into a single
+/// inline-table line: `evidence = { kind = "x", file = "y" }`.
+fn inline_evidence(serialized: &str) -> String {
+    let parts: Vec<String> = serialized
+        .lines()
+        .filter(|l| !l.trim().is_empty())
+        .map(|l| l.trim().to_string())
+        .collect();
+    format!("evidence = {{ {} }}", parts.join(", "))
 }
 
 fn md_escape(s: &str) -> String {
     s.replace('|', "\\|").replace('\n', " ")
+}
+
+fn atomic_write(target: &Path, contents: &str) -> Result<()> {
+    let parent = target
+        .parent()
+        .ok_or_else(|| anyhow!("target {} has no parent", target.display()))?;
+    let fname = target
+        .file_name()
+        .ok_or_else(|| anyhow!("target {} has no file name", target.display()))?;
+    let mut tmp_name = std::ffi::OsString::from(".");
+    tmp_name.push(fname);
+    tmp_name.push(".tmp");
+    let tmp = parent.join(tmp_name);
+    std::fs::write(&tmp, contents)
+        .map_err(|e| anyhow!("write tmp {}: {}", tmp.display(), e))?;
+    std::fs::rename(&tmp, target)
+        .map_err(|e| anyhow!("rename {} -> {}: {}", tmp.display(), target.display(), e))?;
+    Ok(())
 }
