@@ -11,6 +11,20 @@ Complete install guide. Quick-start lives in the main [README](../README.md#inst
 | **Plugin** (v0.16+, recommended on Claude Code 2.1+) | `/plugin marketplace add KeiSei84/KeiSeiKit` then `/plugin install keisei@keisei-marketplace` | Agents + skills + hooks + MCP. Zero cargo build. See [PLUGIN.md](../PLUGIN.md). |
 | **Classic** `./install.sh` | Below | Full kit incl. 47 Rust primitives + 13 shell primitives. Required for `ops` / `dev` / `full` profiles. |
 
+### Self-validating substrate (key feature)
+
+After install, the kit auto-verifies its own architecture via
+`kei-arch-map verify` against the SSoT claim file at `arch/PLAN.toml`.
+Sourced from `install/lib-arch-verify.sh`. **Advisory by default** — if
+any claim FAILs you'll see `[arch-verify]` lines in `.arch-verify.log`
+but install proceeds. Block install on FAIL by exporting
+`INSTALL_ARCH_STRICT=1` before `./install.sh`. The check skips silently
+when `arch/PLAN.toml` is absent or `kei-arch-map` is not built.
+
+This is the install-time leg of a four-layer enforcement stack
+(install / commit / agent / release-time CI). See
+[SELF-VALIDATING-ARCH.md](./SELF-VALIDATING-ARCH.md) for the full design.
+
 ## Prerequisites
 
 **Hard** (needed for every install, regardless of profile):

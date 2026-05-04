@@ -34,6 +34,45 @@ production work.
 | Hooks (35 shipped) | beta | Tested in author's daily use (4–8 parallel Claude Code terminals). Pipeline hooks (`assemble-agents`, `no-hand-edit-agents`) are load-bearing; advisory hooks (RULE 0.12 / 0.13 / 0.14) are non-blocking. |
 | Skills + manifests + assembler | beta | Structured + `assembler-validate` gate runs on every `git commit` inside `~/.claude`. Schema is locked (see [`docs/AGENT-SCHEMA-LOCKED.md`](./docs/AGENT-SCHEMA-LOCKED.md)). |
 
+## Self-validating architecture (the headline feature)
+
+KeiSeiKit doesn't just ship code — it ships proof that the code matches
+its declared architecture. Every commit, every install, every CI run
+mechanically verifies a SSoT claim file (`arch/PLAN.toml`).
+
+```
+       arch/PLAN.toml ──────► kei-arch-map verify
+            ▲                      │
+            │                      ▼
+   kei-arch-derive ◄── kei-registry ◄── kei-cleanup --json
+                            ▲
+                            └── agent STATUS-TRUTH MARKER (RULE 0.16)
+```
+
+- **kei-arch-map** verifies `PLAN.toml` claims against repo state (8
+  evidence kinds: `file_exists`, `regex_match`, `grep_count`, `file_size`,
+  `json_field`, `cargo_check_clean`, `cargo_check_safe`, `http_status`)
+- **kei-cleanup** scans for code-hygiene violations and emits findings
+  (10 scanners: dead-code, unused-deps, dep-drift, LOC limits, TODO age,
+  coverage map, workspace tests, doc warnings, naming consistency,
+  fn-extract candidates)
+- **kei-arch-derive** projects formulas → `PLAN.toml` (auto-generation,
+  Phase 2; PR-3 emit landed, PR-4 inference pending)
+- **kei-registry** stores the formula 4-tuple
+  (`type, invariants, effects, deps`) per block
+
+Active enforcement at four layers: install-time
+(`install/lib-arch-verify.sh`, advisory by default; block via
+`INSTALL_ARCH_STRICT=1`), commit-time
+(`hooks/arch-verify-precommit.sh`, blocks `git commit` on FAIL; bypass
+`ARCH_VERIFY_BYPASS=1`), agent-time (every Agent writes RULE 0.16
+STATUS-TRUTH MARKER → `agent-stub-scan.sh` →
+`kei-registry register-status-truth`), release-time
+(`.github/workflows/ci.yml::arch-verify` job).
+
+See [`docs/SELF-VALIDATING-ARCH.md`](./docs/SELF-VALIDATING-ARCH.md) for
+the full walkthrough.
+
 ## What it does
 
 | | |
