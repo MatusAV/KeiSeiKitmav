@@ -22,6 +22,12 @@
 
 set -u
 
+# v0.43-fix #4: jq runtime guard (convention with 40+ sibling scripts).
+command -v jq >/dev/null 2>&1 || {
+  echo "kei-limits: jq required (brew install jq / apt install jq)" >&2
+  exit 1
+}
+
 CACHE="${KEI_LIMITS_CACHE:-$HOME/.claude/pet/limits-cache.json}"
 mkdir -p "$(dirname "$CACHE")"
 
@@ -60,43 +66,88 @@ probe_kimi() {
     printf '%s' '{"status":"need-key","note":"set MOONSHOT_API_KEY in env to fetch live balance","dashboard":"https://platform.kimi.ai"}'
     return
   fi
-  # Real probe: Moonshot balance API. Honest about what we get back.
   if ! command -v curl >/dev/null 2>&1; then
     printf '%s' '{"status":"no-curl","note":"curl required for live probe"}'
     return
   fi
+  # v0.43-fix #3: feed the bearer token via stdin (--config -), NOT as
+  # a curl argv. argv is visible to `ps`/`/proc/<pid>/cmdline` for any
+  # local user. Audit found this on critic@claude.
   local resp
-  resp=$(curl -sS --max-time 5 \
-    -H "Authorization: Bearer $MOONSHOT_API_KEY" \
-    "https://api.moonshot.ai/v1/users/me/balance" 2>/dev/null || echo '')
+  resp=$(printf 'header = "Authorization: Bearer %s"\n' "$MOONSHOT_API_KEY" \
+    | curl -sS --max-time 5 --config - \
+        "https://api.moonshot.ai/v1/users/me/balance" 2>/dev/null \
+    || echo '')
   if [ -z "$resp" ]; then
     printf '%s' '{"status":"probe-failed","note":"no response (network / wrong key)"}'
     return
   fi
-  # Validate JSON shape.
-  local avail cash voucher
+  # v0.43-fix #2: tonumber? swallows parse errors (was: tonumber threw on
+  # any non-numeric balance, emitted empty JSON, poisoned the assembler
+  # --argjson → whole cache wiped).
+  local avail
   avail=$(printf '%s' "$resp" | jq -r '.data.available_balance // empty' 2>/dev/null)
   if [ -z "$avail" ]; then
     printf '%s' '{"status":"probe-failed","note":"API returned non-balance response"}'
     return
   fi
-  cash=$(printf '%s' "$resp"   | jq -r '.data.cash_balance // 0'      2>/dev/null)
-  voucher=$(printf '%s' "$resp" | jq -r '.data.voucher_balance // 0'  2>/dev/null)
+  local cash voucher
+  cash=$(printf '%s'   "$resp" | jq -r '.data.cash_balance // 0'    2>/dev/null)
+  voucher=$(printf '%s' "$resp" | jq -r '.data.voucher_balance // 0' 2>/dev/null)
   jq -n --arg s "live" --arg a "$avail" --arg c "$cash" --arg v "$voucher" \
-    '{status:$s, available_balance_usd:($a|tonumber), cash_balance_usd:($c|tonumber), voucher_balance_usd:($v|tonumber), dashboard:"https://platform.kimi.ai"}'
+    '{status:$s, available_balance_usd:($a|tonumber? // 0), cash_balance_usd:($c|tonumber? // 0), voucher_balance_usd:($v|tonumber? // 0), dashboard:"https://platform.kimi.ai"}'
 }
 
 # --- assemble cache JSON ---------------------------------------------------
+# v0.43-fix #1: atomic stage-and-rename. Was: `jq > "$CACHE"` truncated the
+# cache BEFORE jq ran — a transient failure permanently wiped the cache.
+# Now: build in tmpfile, validate non-empty, then atomic mv. Preserves
+# last-known-good across probe failures.
+# v0.43-fix #2 (defense-in-depth): if any individual probe returns empty
+# string, substitute a status marker so --argjson never sees invalid JSON.
+
+_safe_json() {
+  local payload="$1"
+  if [ -z "$payload" ]; then
+    printf '%s' '{"status":"probe-empty","note":"probe returned empty result"}'
+    return
+  fi
+  # Validate parses.
+  if ! printf '%s' "$payload" | jq empty 2>/dev/null; then
+    printf '%s' '{"status":"probe-invalid","note":"probe returned non-JSON"}'
+    return
+  fi
+  printf '%s' "$payload"
+}
+
+P_CLAUDE=$(_safe_json "$(probe_claude)")
+P_GROK=$(_safe_json "$(probe_grok)")
+P_AGY=$(_safe_json "$(probe_agy)")
+P_COPILOT=$(_safe_json "$(probe_copilot)")
+P_KIMI=$(_safe_json "$(probe_kimi)")
+
 NOW=$(date -u +%Y-%m-%dT%H:%M:%SZ)
-jq -n \
-  --arg ts "$NOW" \
-  --argjson claude  "$(probe_claude)" \
-  --argjson grok    "$(probe_grok)" \
-  --argjson agy     "$(probe_agy)" \
-  --argjson copilot "$(probe_copilot)" \
-  --argjson kimi    "$(probe_kimi)" \
-  '{ts:$ts, claude:$claude, grok:$grok, agy:$agy, copilot:$copilot, kimi:$kimi}' \
-  > "$CACHE"
+TMP=$(mktemp "${CACHE}.XXXXXX")
+if jq -n \
+    --arg ts "$NOW" \
+    --argjson claude  "$P_CLAUDE" \
+    --argjson grok    "$P_GROK" \
+    --argjson agy     "$P_AGY" \
+    --argjson copilot "$P_COPILOT" \
+    --argjson kimi    "$P_KIMI" \
+    '{ts:$ts, claude:$claude, grok:$grok, agy:$agy, copilot:$copilot, kimi:$kimi}' \
+    > "$TMP" 2>/dev/null \
+   && [ -s "$TMP" ]; then
+  mv -f "$TMP" "$CACHE"
+else
+  rm -f "$TMP" 2>/dev/null
+  echo "kei-limits: cache refresh failed — keeping previous cache" >&2
+  if [ ! -f "$CACHE" ]; then
+    # No prior cache + assembly failed: write a minimal marker so consumers
+    # don't see a missing file as their failure mode.
+    printf '%s\n' '{"ts":"","status":"assembly-failed"}' > "$CACHE"
+  fi
+fi
 
 # --- output ----------------------------------------------------------------
 if [ "$JSON_OUT" = "1" ]; then
