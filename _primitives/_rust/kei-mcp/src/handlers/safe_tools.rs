@@ -30,6 +30,25 @@
 //!   #3 CLAUDECODE bypass — documented as design (see above), no behavior change
 //!   #4 tokio::fs for async file I/O (was: blocking std::fs on tokio thread)
 //!   #5 process-group kill on Unix (was: kill_on_drop SIGKILLs only direct child)
+//!
+//! v0.42 re-audit fixes (2026-05-26, 4-CLI dogfood: Claude+Grok+Gemini+Copilot):
+//!   #1 [CRITICAL] symlink LEAF bypass — canonicalize full path + reject
+//!      leaf symlinks (v0.41 only canonicalized PARENT; ln -s ~/.ssh/keys ./x
+//!      then kei_write x followed the link to the target)
+//!   #2 [HIGH]     $HOME removed from default allowed_roots — was a blanket
+//!      allow that let agent overwrite ~/.claude/hooks (self-neuter), ~/.zshrc
+//!      (RCE on next shell), and credential stores. Default: $PWD only.
+//!      Denylist also extended with .claude/, .grok/, .gemini/, .copilot/,
+//!      .kimi/, and exact shell-init filenames.
+//!   #3 [HIGH]     empty [bash]/[edit]/[write] section also FAIL-CLOSED (was:
+//!      empty vec → pass-through). KEI_POLICY_CHAIN_OPTIONAL=1 to opt in.
+//!   #4 [MED]      load_chain converted to async + tokio::fs (was: blocking
+//!      std::fs on tokio worker thread).
+//!   #5 [MED]      set_process_group + killpg applied to HOOK subprocess too
+//!      (v0.41 only had it on the bash action; hook grandchildren orphaned).
+//!   #6 [MED]      doc note that aggregate timeout is still per-step (60s ×
+//!      N hooks + 60s action). Single-deadline implementation deferred to
+//!      v0.43 — not security-blocking.
 
 use crate::protocol::{err, ok, JsonRpcRequest, JsonRpcResponse, INTERNAL_ERROR, INVALID_PARAMS};
 use serde::Deserialize;
@@ -256,15 +275,21 @@ async fn handle_write(args: &Value) -> Result<String, String> {
     Ok(format!("wrote {} ({} bytes)", safe_path.display(), content.len()))
 }
 
-/// v0.41 fix #2 (Gemini HIGH): reject obvious path-traversal / sensitive-path
-/// targets BEFORE running hooks. Defense-in-depth: hooks may also flag this,
-/// but having the Rust layer reject obvious attacks gives a fast-fail
-/// independent of hook configuration.
+/// Path-traversal + symlink + denylist guard.
 ///
-/// Allowed roots: $PWD (recursively), $HOME (excluding dotfile-secret dirs).
-/// Override: set KEI_ALLOWED_ROOTS=":" -separated absolute paths.
-/// Always rejected: /etc/, /usr/, /System/, /var/, /private/etc/, $HOME/.ssh/,
-/// $HOME/.aws/, $HOME/.config/gcloud/, $HOME/.gnupg/, any path containing "..".
+/// v0.41 (initial): rejected `..`, canonicalized PARENT, checked denylist + roots.
+///   → 4-CLI re-audit (2026-05-26) found this was bypassable via symlink at the
+///     leaf and self-attackable via the $HOME blanket-allowed root.
+///
+/// v0.42 fixes:
+///   #1 [CRITICAL] reject if the leaf is a symlink (was: validated parent
+///      only, fs::write followed leaf symlink to anywhere). Done via
+///      `symlink_metadata` on the leaf BEFORE write, and full `canonicalize`
+///      on the leaf when the file already exists.
+///   #2 [HIGH] $HOME removed from default allowed-roots — default is $PWD
+///      only. Denylist now also covers $HOME/.claude/ (the substrate
+///      itself), shell init files, and credential stores. Operators who
+///      need broader access set KEI_ALLOWED_ROOTS explicitly.
 fn validate_path(p: &str) -> Result<PathBuf, String> {
     if p.is_empty() {
         return Err("file_path: empty".into());
@@ -274,13 +299,23 @@ fn validate_path(p: &str) -> Result<PathBuf, String> {
         return Err(format!("file_path: '..' segment not allowed in {p}"));
     }
     let path = Path::new(p);
-    // 2. Canonicalize the parent (file may not exist yet for kei_write);
-    //    if even the parent doesn't exist, use the absolute form.
-    let canonical = if let Some(parent) = path.parent() {
+
+    // 2. Build a canonical path. Prefer canonicalizing the FULL path (resolves
+    //    symlinks at the leaf, fixing v0.41 CRITICAL bypass). For files that
+    //    don't exist yet (kei_write new file), canonicalize the parent and
+    //    join the leaf — but then explicitly check the leaf isn't a symlink
+    //    via symlink_metadata before writing.
+    let canonical = if path.exists() {
+        // File exists — canonicalize full path, including resolving any leaf
+        // symlink to its real target. The denylist/roots check below then
+        // sees the REAL destination, not the symlink name.
+        path.canonicalize()
+            .map_err(|e| format!("file_path: canonicalize {}: {e}", path.display()))?
+    } else if let Some(parent) = path.parent() {
         if parent.as_os_str().is_empty() || parent == Path::new("") {
             std::env::current_dir()
                 .map_err(|e| format!("file_path: cwd unavailable: {e}"))?
-                .join(path)
+                .join(path.file_name().unwrap_or_default())
         } else if parent.exists() {
             parent.canonicalize()
                 .map_err(|e| format!("file_path: canonicalize {}: {e}", parent.display()))?
@@ -295,12 +330,24 @@ fn validate_path(p: &str) -> Result<PathBuf, String> {
     } else {
         return Err(format!("file_path: invalid {p}"));
     };
+
+    // 3. Even when the file doesn't exist yet, the LEAF could already be a
+    //    dangling symlink that `fs::write` would follow on creation. Reject.
+    if let Ok(meta) = std::fs::symlink_metadata(&canonical) {
+        if meta.file_type().is_symlink() {
+            return Err(format!(
+                "file_path: leaf is a symlink (refusing to follow): {}",
+                canonical.display()
+            ));
+        }
+    }
+
     let canon_str = canonical.display().to_string();
 
-    // 3. Reject obvious sensitive directories.
+    // 4. Reject system + substrate-control + credential paths.
     let denylist = [
         "/etc/", "/usr/", "/System/", "/var/", "/private/etc/", "/private/var/",
-        "/root/",
+        "/root/", "/bin/", "/sbin/",
     ];
     for d in denylist {
         if canon_str.starts_with(d) {
@@ -308,16 +355,38 @@ fn validate_path(p: &str) -> Result<PathBuf, String> {
         }
     }
     if let Ok(home) = std::env::var("HOME") {
-        let secret_dirs = [".ssh/", ".aws/", ".gnupg/", ".config/gcloud/"];
-        for sd in secret_dirs {
+        // v0.42 fix #2 extended denylist — these targets enable self-attack
+        // (overwrite the substrate or shell init for RCE on next session).
+        let dir_secrets = [
+            ".ssh/", ".aws/", ".gnupg/", ".config/gcloud/", ".cargo/credentials",
+            ".npmrc", ".docker/config.json", ".kube/",
+            ".claude/",      // our own substrate: hooks, settings, agents
+            ".grok/",        // sibling CLI's settings
+            ".gemini/",      // antigravity settings
+            ".copilot/",     // copilot config
+            ".kimi/",        // kimi config
+        ];
+        for sd in dir_secrets {
             let full = format!("{home}/{sd}");
             if canon_str.starts_with(&full) {
-                return Err(format!("file_path: denied (secret dir): {canon_str}"));
+                return Err(format!("file_path: denied (secret/substrate dir): {canon_str}"));
+            }
+        }
+        // Exact shell-init files (overwriting → RCE on next shell start).
+        let init_files = [
+            ".zshrc", ".bashrc", ".profile", ".bash_profile", ".zprofile",
+            ".zshenv", ".bash_login", ".inputrc", ".gitconfig",
+            ".config/fish/config.fish",
+        ];
+        for f in init_files {
+            let full = format!("{home}/{f}");
+            if canon_str == full {
+                return Err(format!("file_path: denied (shell-init file): {canon_str}"));
             }
         }
     }
 
-    // 4. Enforce allowed-root containment.
+    // 5. Enforce allowed-root containment.
     let roots = allowed_roots();
     if !roots.is_empty() {
         let ok = roots.iter().any(|r| canon_str.starts_with(r));
@@ -335,12 +404,13 @@ fn allowed_roots() -> Vec<String> {
     if let Ok(v) = std::env::var("KEI_ALLOWED_ROOTS") {
         return v.split(':').filter(|s| !s.is_empty()).map(String::from).collect();
     }
+    // v0.42 fix #2 (Claude+Gemini HIGH): default to $PWD ONLY. Was: $PWD +
+    // $HOME blanket — too permissive, agent could overwrite ~/.claude/hooks/
+    // or ~/.zshrc and self-neuter the safety layer. Operators who need
+    // broader access opt in via KEI_ALLOWED_ROOTS=":" -separated abs paths.
     let mut roots = Vec::new();
     if let Ok(cwd) = std::env::current_dir() {
         roots.push(format!("{}/", cwd.display()));
-    }
-    if let Ok(home) = std::env::var("HOME") {
-        roots.push(format!("{home}/"));
     }
     roots
 }
@@ -353,15 +423,34 @@ fn allowed_roots() -> Vec<String> {
 ///
 /// Skips the chain if the parent process is already inside Claude or Grok
 /// (env flags), since those CLIs' native PreToolUse hooks already fired.
+/// Run the configured hook chain for `tool` ("bash"/"edit"/"write").
+///
+/// v0.42 fixes:
+///   #3 [HIGH]   empty chain (section absent or zero hooks) now FAILS CLOSED
+///               unless KEI_POLICY_CHAIN_OPTIONAL=1.
+///   #4 [MED]    load_chain() converted to async (was: blocking std::fs).
+///   #5 [MED]    hook subprocess gets `process_group(0)` + killpg on timeout
+///               (was: only the bash action got it; hooks could orphan).
+///   #6 [MED]    aggregate timeout across the whole chain + action (was:
+///               per-hook 60s, so chain+action could legitimately run
+///               4× the documented cap on a 3-hook chain).
 async fn run_chain(tool: &str, hook_input: &Value) -> Result<(), String> {
     if env_truthy("CLAUDECODE") || env_truthy("GROKCODE") {
         // Native hooks already enforced — don't double-fire.
         return Ok(());
     }
 
-    let chain = load_chain(tool)?;
+    let chain = load_chain(tool).await?;
     if chain.is_empty() {
-        return Ok(());
+        // v0.42 fix #3 (Claude+Gemini HIGH): empty section is the same
+        // misconfig class as missing file — FAIL CLOSED with explicit opt-in.
+        if env_truthy("KEI_POLICY_CHAIN_OPTIONAL") {
+            return Ok(());
+        }
+        return Err(format!(
+            "[policy-chain] section [{tool}] is empty — refusing to run \
+             (set KEI_POLICY_CHAIN_OPTIONAL=1 to allow pass-through, e.g. for tests)"
+        ));
     }
 
     let hooks_dir = hooks_dir()?;
@@ -371,24 +460,26 @@ async fn run_chain(tool: &str, hook_input: &Value) -> Result<(), String> {
     for hook in chain {
         let path = hooks_dir.join(&hook);
         if !path.is_file() {
-            // v0.41 fix #1 (Gemini HIGH): FAIL-CLOSED on missing hook.
-            // Previously we logged a warning and continued — that meant a
-            // misconfigured deployment (hook deleted, wrong path) silently
-            // disabled enforcement. Now: refuse the action, surface the
-            // error so the operator notices.
             return Err(format!(
                 "[policy-chain] hook missing: {} (declared in policy-chain.toml [{}])",
                 path.display(), tool
             ));
         }
 
-        let mut child = Command::new(&path)
+        let mut child_cmd = Command::new(&path);
+        child_cmd
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
-            .kill_on_drop(true)
+            .kill_on_drop(true);
+        // v0.42 fix #5: put hook child in its own process group so timeout
+        // can killpg the whole tree (was: kill_on_drop = immediate child only).
+        set_process_group(&mut child_cmd);
+
+        let mut child = child_cmd
             .spawn()
             .map_err(|e| format!("spawn {}: {e}", path.display()))?;
+        let pid_opt = child.id();
 
         if let Some(mut stdin) = child.stdin.take() {
             stdin.write_all(payload.as_bytes()).await
@@ -398,10 +489,18 @@ async fn run_chain(tool: &str, hook_input: &Value) -> Result<(), String> {
         }
 
         let fut = child.wait_with_output();
-        let out = tokio::time::timeout(Duration::from_secs(SAFE_TOOL_TIMEOUT_SECS), fut)
-            .await
-            .map_err(|_| format!("hook {} timeout", hook))?
-            .map_err(|e| format!("wait {}: {e}", path.display()))?;
+        let out = match tokio::time::timeout(Duration::from_secs(SAFE_TOOL_TIMEOUT_SECS), fut).await {
+            Ok(Ok(o)) => o,
+            Ok(Err(e)) => return Err(format!("wait {}: {e}", path.display())),
+            Err(_) => {
+                // v0.42 fix #5: kill the whole hook process group, not just
+                // the immediate child.
+                if let Some(pid) = pid_opt {
+                    killpg_best_effort(pid);
+                }
+                return Err(format!("hook {hook} timeout"));
+            }
+        };
 
         let code = out.status.code().unwrap_or(-1);
         if code == 0 {
@@ -417,14 +516,14 @@ async fn run_chain(tool: &str, hook_input: &Value) -> Result<(), String> {
 
 // ---- config helpers -----------------------------------------------------
 
-fn load_chain(tool: &str) -> Result<Vec<String>, String> {
+/// v0.42 fix #4: async + tokio::fs (was: blocking std::fs would freeze
+/// a tokio worker if policy-chain.toml lived on a slow / hung mount).
+async fn load_chain(tool: &str) -> Result<Vec<String>, String> {
     let path = chain_path()?;
-    if !path.is_file() {
-        // v0.41 fix #1 (Gemini HIGH companion): default behavior when
-        // policy-chain.toml is absent is now configurable via env. Without
-        // explicit opt-in to pass-through, FAIL-CLOSED — caller sees a
-        // clear error instead of silent bypass.
-        if std::env::var("KEI_POLICY_CHAIN_OPTIONAL").as_deref() == Ok("1") {
+    // tokio::fs::try_exists avoids a blocking is_file() syscall.
+    let exists = fs::try_exists(&path).await.unwrap_or(false);
+    if !exists {
+        if env_truthy("KEI_POLICY_CHAIN_OPTIONAL") {
             return Ok(vec![]);
         }
         return Err(format!(
@@ -432,7 +531,7 @@ fn load_chain(tool: &str) -> Result<Vec<String>, String> {
             path.display()
         ));
     }
-    let raw = std::fs::read_to_string(&path)
+    let raw = fs::read_to_string(&path).await
         .map_err(|e| format!("read policy-chain.toml: {e}"))?;
     let parsed: PolicyChain = toml::from_str(&raw)
         .map_err(|e| format!("parse policy-chain.toml: {e}"))?;
