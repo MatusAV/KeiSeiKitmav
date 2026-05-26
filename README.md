@@ -93,6 +93,54 @@ duplicated install logic.
 into client-native config — those are bridge targets, not separate
 profiles.
 
+## Post-install — the `kei` CLI (v0.45+)
+
+After install, `kei` is the substrate entrypoint. On first interactive
+run an onboarding wizard walks you through picking a primary LLM
+orchestrator and wiring kei-mcp into the CLIs you have installed:
+
+```bash
+kei                              # launch primary CLI (default: claude)
+kei onboard                      # post-install wizard (re-runnable)
+kei pick                         # interactive primary picker
+kei primary [<backend>]          # get/set primary LLM provider
+
+kei agent <name> "<task>"        # invoke agent: backend from DNA → primary
+kei agent --on=grok <name> "..." # invoke agent on a specific backend
+kei run-via <backend> <name> "<task>"   # explicit-backend dispatch
+
+kei mcp-wire                     # wire kei-mcp into all installed CLIs
+kei mcp-wire --list              # show enforcement tier per CLI
+
+kei limits                       # honest subscription-quota report
+                                 # (4 of 5 CLIs have no public API)
+
+kei configure                    # re-pick hook packs + stack profile
+kei message ...                  # cross-session mailbox
+kei --status                     # splash with substrate health
+```
+
+### Multi-LLM agent dispatch
+
+Agents are markdown prompts that can be served by ANY of 5 supported
+CLIs (Claude Code, Grok, Antigravity-Gemini, GitHub Copilot, Kimi).
+Each agent's manifest may declare a `provider` field that becomes its
+DNA; `kei agent <name>` then routes to that provider automatically.
+See [`docs/encyclopedia/multi-cli-agents.md`](./docs/encyclopedia/multi-cli-agents.md).
+
+### Cross-CLI policy enforcement
+
+KeiSeiKit's safety hooks (`no-github-push`, `safety-guard`,
+`destructive-guard`, `citation-verify`, `numeric-claims-guard`) extend
+to non-Claude CLIs through a 3-tier enforcement model:
+
+- **TIER 1 — full native**: Claude (existing) + Grok (ports our hooks to `~/.grok/settings.json`)
+- **TIER 2 — MCP-wrapped**: Copilot (`--excluded-tools=shell` + force `kei_bash` via MCP)
+- **TIER 3 — advisory**: Agy + Kimi (cannot disable native shell; prompt-level only)
+
+See [`docs/encyclopedia/cross-cli-policy.md`](./docs/encyclopedia/cross-cli-policy.md)
+for the full matrix + setup.
+
 ### Outcome-only — try just the outcome loop (5 files, ~200 LOC)
 
 If you want to try only the outcome-tracking primitive without

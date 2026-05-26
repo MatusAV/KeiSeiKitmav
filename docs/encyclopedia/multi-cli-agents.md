@@ -108,6 +108,18 @@ strengths; the substrate is agnostic about which you pick. Pick by:
 - **Independent second opinion** — same agent, different model, see if
   conclusions diverge.
 
+## First-run wizard (`kei onboard`, v0.45+)
+
+After install, `bootstrap.sh` auto-triggers `kei onboard` if stdin is a TTY.
+The wizard walks through:
+
+1. Pick primary LLM orchestrator (claude / grok / agy / copilot / kimi)
+2. Run `kei mcp-wire` to wire kei-mcp into all detected CLIs
+3. Optional MOONSHOT_API_KEY hint for `kei limits` live polling
+4. Run `kei-doctor` health check
+
+Re-run any time: `kei onboard`. Skip auto-trigger on install: `KEI_NO_ONBOARD=1`.
+
 ## Orchestrator picker — `kei` no longer hardcodes claude
 
 Without args, `kei` reads `~/.claude/config/primary.toml` and execs that CLI.
@@ -124,6 +136,21 @@ kei primary            # show current primary
 The splash shows `primary CLI: <backend>` so you always know which orchestrator
 will start. If the chosen primary isn't installed, `kei` prints the install
 command and offers `kei pick` as recovery.
+
+## Subscription quotas — `kei limits` (v0.43+)
+
+```bash
+kei limits             # human-readable report
+kei limits --json      # machine-readable
+kei limits --quiet     # cache-refresh only, no output
+```
+
+Research-grounded honest delivery: 4 of 5 CLIs have **no public programmatic
+API for quota**. The command shows status markers + dashboard URLs for those.
+Only Kimi exposes a balance API via Moonshot `/v1/users/me/balance` —
+requires `MOONSHOT_API_KEY` env. The cache lives at
+`~/.claude/pet/limits-cache.json`; the pet statusline reads it (does NOT
+poll itself) and displays the Kimi balance segment when live.
 
 ## Cross-CLI sub-agent spawn via MCP — `spawn_agent`
 

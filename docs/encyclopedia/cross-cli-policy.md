@@ -116,6 +116,40 @@ The chain runs against the same hook scripts Claude uses; identical input
 shape, identical decisions. On block, the hook's stderr surfaces as the MCP
 error message so the calling agent sees exactly why.
 
+**v0.44 hardening** (post second 4-CLI re-audit, supersedes v0.42; CURRENT):
+
+The second-round audit (Claude+Grok+Gemini+Copilot, each from different
+angle) found 9 real issues in v0.42–v0.43. All patched. Highlights:
+
+- **Walk-up canonicalize** for non-existent leaf paths — closes the v0.42
+  bypass where the *parent's parent* could be a symlink. validate_path
+  now finds the deepest existing ancestor and canonicalizes from there.
+- **O_NOFOLLOW + fd-write** — closes TOCTOU window between validate_path
+  and `fs::write`. Concurrent symlink-swap during hook chain await is now
+  rejected at `open()` time.
+- **`env_clear` on subprocess spawn** — `kei_bash` no longer inherits
+  `AWS_*`, `GITHUB_TOKEN`, `MOONSHOT_API_KEY`, etc. Whitelist forwards
+  PATH/HOME/USER/LANG/TERM/SHELL/PWD/TMPDIR only. Add named vars via
+  `KEI_SAFE_ENV_EXTRA`.
+- **`Path::starts_with` + canonical KEI_ALLOWED_ROOTS** —
+  `KEI_ALLOWED_ROOTS=/home/u/proj` no longer matches `/home/u/proj-evil/`.
+  Component-aware containment + symlink resolution (so `/var → /private/var`
+  on macOS works for `/var/folders` $TMPDIR).
+- **MOONSHOT_API_KEY sanitization** in `kei limits` — token validated
+  against `[A-Za-z0-9_.-]+` before being fed to `curl --config -`; blocks
+  config injection if env value was tampered.
+- **macOS `/var/folders` carve-out** — denylist no longer blocks $TMPDIR.
+  allowed_roots check runs BEFORE denylist; only `/var/db/`, `/var/log/`,
+  `/var/root/` etc. are now blanket-denied.
+- **Hook subprocess hardening** — `process_group(0)` + `killpg` now also
+  applied to hook spawn (was: only on bash action; v0.42 left hook
+  grandchildren orphan on timeout).
+
+**v0.43 hardening** (post first re-audit):
+
+- 4 audit fixes in `kei-limits.sh` (atomic cache, tonumber? parse,
+  off-argv token, jq runtime guard).
+
 **v0.42 hardening** (post 4-CLI re-audit, supersedes v0.41):
 
 - **Fail-CLOSED everywhere** — missing config, missing hook, OR empty
