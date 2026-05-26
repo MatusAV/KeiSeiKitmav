@@ -70,9 +70,17 @@ probe_kimi() {
     printf '%s' '{"status":"no-curl","note":"curl required for live probe"}'
     return
   fi
-  # v0.43-fix #3: feed the bearer token via stdin (--config -), NOT as
-  # a curl argv. argv is visible to `ps`/`/proc/<pid>/cmdline` for any
-  # local user. Audit found this on critic@claude.
+  # v0.44 fix #3 (Gemini HIGH): sanitize MOONSHOT_API_KEY before formatting.
+  # Was: token injected into a curl --config line via printf 'header = "...%s..."';
+  # if the token contained a double-quote + newline + 'url = "attacker"',
+  # curl would parse the injected config option and redirect the request.
+  # Now: validate the key matches a known-safe charset; reject otherwise.
+  case "$MOONSHOT_API_KEY" in
+    *[!A-Za-z0-9_.\-]*)
+      printf '%s' '{"status":"probe-failed","note":"MOONSHOT_API_KEY contains unsafe chars; expected [A-Za-z0-9_.-]"}'
+      return
+      ;;
+  esac
   local resp
   resp=$(printf 'header = "Authorization: Bearer %s"\n' "$MOONSHOT_API_KEY" \
     | curl -sS --max-time 5 --config - \
@@ -143,9 +151,19 @@ else
   rm -f "$TMP" 2>/dev/null
   echo "kei-limits: cache refresh failed — keeping previous cache" >&2
   if [ ! -f "$CACHE" ]; then
-    # No prior cache + assembly failed: write a minimal marker so consumers
-    # don't see a missing file as their failure mode.
-    printf '%s\n' '{"ts":"","status":"assembly-failed"}' > "$CACHE"
+    # v0.44 fix #9 (Claude MED): failure-fallback must carry the SAME schema
+    # as the success cache (ts + 5 per-CLI keys). Was: emitted only {ts,
+    # status} which broke pet's .kimi.available_balance_usd read and the
+    # script's own per-CLI render loop. Now: full shape, all 5 marked
+    # status="assembly-failed".
+    jq -n '{ts:"",
+            claude:{status:"assembly-failed",note:"see logs"},
+            grok:{status:"assembly-failed",note:"see logs"},
+            agy:{status:"assembly-failed",note:"see logs"},
+            copilot:{status:"assembly-failed",note:"see logs"},
+            kimi:{status:"assembly-failed",note:"see logs"}}' \
+      > "$CACHE" 2>/dev/null \
+      || printf '%s\n' '{"ts":"","claude":{"status":"assembly-failed"},"grok":{"status":"assembly-failed"},"agy":{"status":"assembly-failed"},"copilot":{"status":"assembly-failed"},"kimi":{"status":"assembly-failed"}}' > "$CACHE"
   fi
 fi
 

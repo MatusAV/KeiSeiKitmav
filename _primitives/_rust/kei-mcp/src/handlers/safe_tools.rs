@@ -60,8 +60,12 @@ use tokio::fs;
 use tokio::io::AsyncWriteExt;
 use tokio::process::Command;
 
-/// Hard cap on how long a single hook chain + action may take. Matches the
-/// timeout in `handlers::tools::ATOM_TIMEOUT_SECS` for consistency.
+/// Per-step timeout (each hook AND the action each get up to this long).
+/// For an N-hook chain the total wall-clock cap is approximately
+/// `(N+1) * SAFE_TOOL_TIMEOUT_SECS`. v0.44 doc-honesty fix (Claude MED):
+/// prior versions claimed this was an "aggregate" cap, which was always
+/// wrong. Aggregate-deadline impl is deferred; for now the per-step
+/// semantics are documented honestly so operators pick a sane value.
 const SAFE_TOOL_TIMEOUT_SECS: u64 = 60;
 
 #[derive(Deserialize, Default)]
@@ -148,9 +152,16 @@ async fn handle_bash(args: &Value) -> Result<String, String> {
         .ok_or_else(|| missing_arg("kei_bash", "command"))?;
     let cwd = args.get("cwd").and_then(Value::as_str);
 
+    // v0.44 fix #8 (Gemini MED): include cwd in hook input. Without this,
+    // safety-guard could approve a destructive command (e.g. `rm -rf *`)
+    // assuming PWD, while the actual cwd arg redirected it to a sensitive
+    // dir. Hooks now see the real working directory.
     let hook_input = json!({
         "tool_name": "Bash",
-        "tool_input": { "command": command }
+        "tool_input": {
+            "command": command,
+            "cwd": cwd
+        }
     });
     run_chain("bash", &hook_input).await?;
 
@@ -163,9 +174,14 @@ async fn handle_bash(args: &Value) -> Result<String, String> {
         .stdout(Stdio::piped())
         .stderr(Stdio::piped())
         .kill_on_drop(true);
-    // v0.41 fix #5 (Gemini MED): put child in its own process group so timeout
-    // kills it and ALL grandchildren together (not just the immediate shell).
+    // v0.41 fix #5: put child in its own process group so timeout kills it
+    // and ALL grandchildren together (not just the immediate shell).
     set_process_group(&mut cmd);
+    // v0.44 fix #4 (Gemini HIGH): clear parent env on subprocess spawn.
+    // Was: child inherited AWS_*, GITHUB_TOKEN, MOONSHOT_API_KEY, etc.
+    // An agent that exec's `env` via kei_bash could exfiltrate all of them.
+    // Now: only PATH/HOME/USER/LANG/TERM/SHELL forwarded (set in helper).
+    apply_safe_env(&mut cmd);
 
     let child = cmd.spawn().map_err(|e| format!("spawn bash: {e}"))?;
     let pid_opt = child.id();
@@ -196,14 +212,41 @@ async fn handle_bash(args: &Value) -> Result<String, String> {
 }
 
 // v0.41 fix #5: process-group helpers (Unix-only; no-op on other platforms).
-// tokio::process::Command::process_group is available on Unix without
-// requiring the std::os::unix::process::CommandExt trait import.
 #[cfg(unix)]
 fn set_process_group(cmd: &mut Command) {
-    cmd.process_group(0); // 0 = new session leader for this child
+    cmd.process_group(0);
 }
 #[cfg(not(unix))]
 fn set_process_group(_cmd: &mut Command) {}
+
+/// v0.44 fix #4 (Gemini HIGH): strip parent env on subprocess spawn so secrets
+/// like AWS_*, GITHUB_TOKEN, MOONSHOT_API_KEY etc. don't leak to user-controlled
+/// bash commands or hook scripts. Whitelist forwards only PATH/HOME/USER/LANG/
+/// TERM/SHELL — enough to keep tools functional, none of it sensitive.
+///
+/// Override: `KEI_SAFE_ENV_EXTRA=":-separated list"` adds named vars to the
+/// whitelist for callers that legitimately need (e.g. NIX_PATH, JAVA_HOME).
+fn apply_safe_env(cmd: &mut Command) {
+    cmd.env_clear();
+    let default_keep = [
+        "PATH", "HOME", "USER", "LOGNAME", "SHELL", "LANG", "LC_ALL",
+        "LC_CTYPE", "TERM", "PWD", "TMPDIR",
+    ];
+    for k in default_keep {
+        if let Ok(v) = std::env::var(k) {
+            cmd.env(k, v);
+        }
+    }
+    if let Ok(extras) = std::env::var("KEI_SAFE_ENV_EXTRA") {
+        for k in extras.split(':') {
+            let k = k.trim();
+            if k.is_empty() { continue; }
+            if let Ok(v) = std::env::var(k) {
+                cmd.env(k, v);
+            }
+        }
+    }
+}
 
 #[cfg(unix)]
 fn killpg_best_effort(pid: u32) {
@@ -224,7 +267,12 @@ async fn handle_edit(args: &Value) -> Result<String, String> {
     let new_string = args.get("new_string").and_then(Value::as_str)
         .ok_or_else(|| missing_arg("kei_edit", "new_string"))?;
 
-    // v0.41 fix #2: path-traversal guard
+    // v0.44 LOW: reject empty old_string (would silently prepend new_string
+    // because contents.contains("") is always true).
+    if old_string.is_empty() {
+        return Err("kei_edit: old_string must not be empty".into());
+    }
+
     let safe_path = validate_path(file_path)?;
 
     let hook_input = json!({
@@ -237,16 +285,12 @@ async fn handle_edit(args: &Value) -> Result<String, String> {
     });
     run_chain("edit", &hook_input).await?;
 
-    // v0.41 fix #4: tokio::fs (async)
-    let contents = fs::read_to_string(&safe_path).await
-        .map_err(|e| format!("read {}: {e}", safe_path.display()))?;
-    if !contents.contains(old_string) {
-        return Err(format!("kei_edit: old_string not found in {}", safe_path.display()));
-    }
-    let updated = contents.replacen(old_string, new_string, 1);
-    fs::write(&safe_path, &updated).await
-        .map_err(|e| format!("write {}: {e}", safe_path.display()))?;
-    Ok(format!("edited {} ({} bytes)", safe_path.display(), updated.len()))
+    // v0.44 fix #2 (Gemini HIGH + Claude #4 MED): close TOCTOU window. After
+    // validate_path approved the path, a concurrent process could swap the
+    // file for a symlink before our write. Open the existing file with
+    // O_NOFOLLOW so the open itself fails on symlink-swap; then read/write
+    // through the open fd (not the path again) so no second path lookup.
+    open_nofollow_read_write_edit(&safe_path, old_string, new_string).await
 }
 
 async fn handle_write(args: &Value) -> Result<String, String> {
@@ -255,7 +299,6 @@ async fn handle_write(args: &Value) -> Result<String, String> {
     let content = args.get("content").and_then(Value::as_str)
         .ok_or_else(|| missing_arg("kei_write", "content"))?;
 
-    // v0.41 fix #2: path-traversal guard
     let safe_path = validate_path(file_path)?;
 
     let hook_input = json!({
@@ -270,9 +313,93 @@ async fn handle_write(args: &Value) -> Result<String, String> {
                 .map_err(|e| format!("mkdir {}: {e}", parent.display()))?;
         }
     }
-    fs::write(&safe_path, content).await
-        .map_err(|e| format!("write {}: {e}", safe_path.display()))?;
-    Ok(format!("wrote {} ({} bytes)", safe_path.display(), content.len()))
+    // v0.44 fix #2: open with O_NOFOLLOW + O_CREAT to refuse swap-to-symlink.
+    open_nofollow_write(&safe_path, content).await
+}
+
+/// v0.44 fix #2: edit via O_NOFOLLOW-opened fd to close the TOCTOU window
+/// between validate_path and the write. The open() itself refuses if the leaf
+/// has been swapped to a symlink during the hook-chain await.
+#[cfg(unix)]
+async fn open_nofollow_read_write_edit(
+    path: &Path, old_string: &str, new_string: &str,
+) -> Result<String, String> {
+    use std::os::unix::fs::OpenOptionsExt;
+    let path = path.to_path_buf();
+    let old_s = old_string.to_string();
+    let new_s = new_string.to_string();
+    // Blocking syscalls on a dedicated thread (tokio::task::spawn_blocking).
+    let result = tokio::task::spawn_blocking(move || -> Result<String, String> {
+        let mut f = std::fs::OpenOptions::new()
+            .read(true).write(true)
+            .custom_flags(libc::O_NOFOLLOW)
+            .open(&path)
+            .map_err(|e| format!("kei_edit: open(O_NOFOLLOW) {}: {e}", path.display()))?;
+        use std::io::{Read, Write, Seek, SeekFrom};
+        let mut contents = String::new();
+        f.read_to_string(&mut contents)
+            .map_err(|e| format!("kei_edit: read {}: {e}", path.display()))?;
+        if !contents.contains(&old_s) {
+            return Err(format!("kei_edit: old_string not found in {}", path.display()));
+        }
+        let updated = contents.replacen(&old_s, &new_s, 1);
+        f.set_len(0).map_err(|e| format!("kei_edit: truncate {}: {e}", path.display()))?;
+        f.seek(SeekFrom::Start(0))
+            .map_err(|e| format!("kei_edit: seek {}: {e}", path.display()))?;
+        f.write_all(updated.as_bytes())
+            .map_err(|e| format!("kei_edit: write {}: {e}", path.display()))?;
+        Ok(format!("edited {} ({} bytes)", path.display(), updated.len()))
+    }).await
+        .map_err(|e| format!("kei_edit: thread join: {e}"))?;
+    result
+}
+#[cfg(not(unix))]
+async fn open_nofollow_read_write_edit(
+    path: &Path, old_string: &str, new_string: &str,
+) -> Result<String, String> {
+    // Non-Unix fallback: best-effort using tokio::fs (no O_NOFOLLOW available).
+    let contents = fs::read_to_string(path).await
+        .map_err(|e| format!("read {}: {e}", path.display()))?;
+    if !contents.contains(old_string) {
+        return Err(format!("kei_edit: old_string not found in {}", path.display()));
+    }
+    let updated = contents.replacen(old_string, new_string, 1);
+    fs::write(path, &updated).await
+        .map_err(|e| format!("write {}: {e}", path.display()))?;
+    Ok(format!("edited {} ({} bytes)", path.display(), updated.len()))
+}
+
+#[cfg(unix)]
+async fn open_nofollow_write(path: &Path, content: &str) -> Result<String, String> {
+    use std::os::unix::fs::OpenOptionsExt;
+    let path = path.to_path_buf();
+    let bytes = content.as_bytes().to_vec();
+    let result = tokio::task::spawn_blocking(move || -> Result<String, String> {
+        let mut opts = std::fs::OpenOptions::new();
+        opts.write(true).create(true).truncate(true);
+        // O_NOFOLLOW: refuse if the leaf is a symlink (someone swapped it
+        // during our await). Without this the v0.42 symlink_metadata pre-check
+        // was just an indicator — fs::write still followed.
+        opts.custom_flags(libc::O_NOFOLLOW);
+        // O_EXCL combined with O_CREAT could be added when path does not yet
+        // exist to refuse any pre-existing inode — but the test suite uses
+        // the same path multiple times, so we keep truncate semantics. The
+        // O_NOFOLLOW + symlink_metadata pre-check is sufficient.
+        let mut f = opts.open(&path)
+            .map_err(|e| format!("kei_write: open(O_NOFOLLOW) {}: {e}", path.display()))?;
+        use std::io::Write;
+        f.write_all(&bytes)
+            .map_err(|e| format!("kei_write: write {}: {e}", path.display()))?;
+        Ok(format!("wrote {} ({} bytes)", path.display(), bytes.len()))
+    }).await
+        .map_err(|e| format!("kei_write: thread join: {e}"))?;
+    result
+}
+#[cfg(not(unix))]
+async fn open_nofollow_write(path: &Path, content: &str) -> Result<String, String> {
+    fs::write(path, content).await
+        .map_err(|e| format!("write {}: {e}", path.display()))?;
+    Ok(format!("wrote {} ({} bytes)", path.display(), content.len()))
 }
 
 /// Path-traversal + symlink + denylist guard.
@@ -300,36 +427,16 @@ fn validate_path(p: &str) -> Result<PathBuf, String> {
     }
     let path = Path::new(p);
 
-    // 2. Build a canonical path. Prefer canonicalizing the FULL path (resolves
-    //    symlinks at the leaf, fixing v0.41 CRITICAL bypass). For files that
-    //    don't exist yet (kei_write new file), canonicalize the parent and
-    //    join the leaf — but then explicitly check the leaf isn't a symlink
-    //    via symlink_metadata before writing.
-    let canonical = if path.exists() {
-        // File exists — canonicalize full path, including resolving any leaf
-        // symlink to its real target. The denylist/roots check below then
-        // sees the REAL destination, not the symlink name.
-        path.canonicalize()
-            .map_err(|e| format!("file_path: canonicalize {}: {e}", path.display()))?
-    } else if let Some(parent) = path.parent() {
-        if parent.as_os_str().is_empty() || parent == Path::new("") {
-            std::env::current_dir()
-                .map_err(|e| format!("file_path: cwd unavailable: {e}"))?
-                .join(path.file_name().unwrap_or_default())
-        } else if parent.exists() {
-            parent.canonicalize()
-                .map_err(|e| format!("file_path: canonicalize {}: {e}", parent.display()))?
-                .join(path.file_name().unwrap_or_default())
-        } else if path.is_absolute() {
-            path.to_path_buf()
-        } else {
-            std::env::current_dir()
-                .map_err(|e| format!("file_path: cwd unavailable: {e}"))?
-                .join(path)
-        }
-    } else {
-        return Err(format!("file_path: invalid {p}"));
-    };
+    // 2. Build a canonical path. Walk UP to the deepest existing ancestor,
+    //    canonicalize it (resolves all symlinks in the existing prefix),
+    //    then reattach the non-existent tail. This catches symlinks at ANY
+    //    depth in the path, including nested non-existent leaves.
+    //
+    //    v0.44 fix #1 (Gemini CRITICAL): v0.42 only canonicalized the immediate
+    //    parent. If the parent didn't exist either (e.g. /proj/symlink_dir/
+    //    new_subdir/file.txt where symlink_dir → /Users/denis), the path fell
+    //    through to "absolute as-is" → no canonicalization → bypass.
+    let canonical = canonicalize_with_walk_up(path)?;
 
     // 3. Even when the file doesn't exist yet, the LEAF could already be a
     //    dangling symlink that `fs::write` would follow on creation. Reject.
@@ -342,29 +449,49 @@ fn validate_path(p: &str) -> Result<PathBuf, String> {
         }
     }
 
+    // 4. Allowed-root containment FIRST (v0.44 fix #6 reorder: was after
+    //    denylist, which meant macOS $TMPDIR = /private/var/folders/... hit
+    //    the /var/ denylist before reaching the allowed_roots check, blocking
+    //    legitimate use of tempfile-backed CWD on macOS).
+    //
+    //    v0.44 fix #5 (Claude HIGH): use Path::starts_with for component-aware
+    //    containment — Path::starts_with("/home/u/proj") does NOT match
+    //    /home/u/proj-secrets, the str::starts_with that was here did.
+    let roots = allowed_roots();
+    let in_allowed_root = roots.is_empty() || roots.iter().any(|r| {
+        canonical.starts_with(r)
+    });
+    if !in_allowed_root {
+        return Err(format!(
+            "file_path: outside allowed roots {:?}: {}",
+            roots, canonical.display()
+        ));
+    }
+
     let canon_str = canonical.display().to_string();
 
-    // 4. Reject system + substrate-control + credential paths.
+    // 5. Reject system + substrate-control + credential paths.
+    //    Note: paths inside an allowed root that also match a denylist entry
+    //    are STILL denied (e.g. agent's CWD == ~/.claude/ — denied even
+    //    though it matches a default root). System dirs not in any allowed
+    //    root would have been caught above anyway.
     let denylist = [
-        "/etc/", "/usr/", "/System/", "/var/", "/private/etc/", "/private/var/",
+        "/etc/", "/usr/", "/System/", "/var/db/", "/var/log/", "/var/root/",
+        "/private/etc/", "/private/var/db/", "/private/var/log/", "/private/var/root/",
         "/root/", "/bin/", "/sbin/",
     ];
+    // NOTE: /var/folders/ (macOS $TMPDIR) and /private/tmp/ are NOT denied —
+    // they are legitimate working dirs for tempfile-backed agents.
     for d in denylist {
         if canon_str.starts_with(d) {
             return Err(format!("file_path: denied (system dir): {canon_str}"));
         }
     }
     if let Ok(home) = std::env::var("HOME") {
-        // v0.42 fix #2 extended denylist — these targets enable self-attack
-        // (overwrite the substrate or shell init for RCE on next session).
         let dir_secrets = [
             ".ssh/", ".aws/", ".gnupg/", ".config/gcloud/", ".cargo/credentials",
             ".npmrc", ".docker/config.json", ".kube/",
-            ".claude/",      // our own substrate: hooks, settings, agents
-            ".grok/",        // sibling CLI's settings
-            ".gemini/",      // antigravity settings
-            ".copilot/",     // copilot config
-            ".kimi/",        // kimi config
+            ".claude/", ".grok/", ".gemini/", ".copilot/", ".kimi/",
         ];
         for sd in dir_secrets {
             let full = format!("{home}/{sd}");
@@ -372,7 +499,6 @@ fn validate_path(p: &str) -> Result<PathBuf, String> {
                 return Err(format!("file_path: denied (secret/substrate dir): {canon_str}"));
             }
         }
-        // Exact shell-init files (overwriting → RCE on next shell start).
         let init_files = [
             ".zshrc", ".bashrc", ".profile", ".bash_profile", ".zprofile",
             ".zshenv", ".bash_login", ".inputrc", ".gitconfig",
@@ -386,31 +512,71 @@ fn validate_path(p: &str) -> Result<PathBuf, String> {
         }
     }
 
-    // 5. Enforce allowed-root containment.
-    let roots = allowed_roots();
-    if !roots.is_empty() {
-        let ok = roots.iter().any(|r| canon_str.starts_with(r));
-        if !ok {
-            return Err(format!(
-                "file_path: outside allowed roots {roots:?}: {canon_str}"
-            ));
-        }
-    }
-
     Ok(canonical)
 }
 
-fn allowed_roots() -> Vec<String> {
-    if let Ok(v) = std::env::var("KEI_ALLOWED_ROOTS") {
-        return v.split(':').filter(|s| !s.is_empty()).map(String::from).collect();
+/// v0.44 fix #1: walk up the path looking for the deepest existing ancestor,
+/// canonicalize THAT, then reattach the non-existent tail components.
+/// Resolves symlinks at any depth (existing OR non-existing branches).
+fn canonicalize_with_walk_up(path: &Path) -> Result<PathBuf, String> {
+    // Make the path absolute first so we can walk up reliably.
+    let abs = if path.is_absolute() {
+        path.to_path_buf()
+    } else {
+        std::env::current_dir()
+            .map_err(|e| format!("file_path: cwd unavailable: {e}"))?
+            .join(path)
+    };
+
+    // Walk up from the leaf, collecting non-existent components in reverse.
+    let mut current = abs.clone();
+    let mut tail: Vec<std::ffi::OsString> = Vec::new();
+    let canon = loop {
+        if current.exists() {
+            break current.canonicalize()
+                .map_err(|e| format!("file_path: canonicalize {}: {e}", current.display()))?;
+        }
+        let name = current.file_name()
+            .ok_or_else(|| format!("file_path: path has no existing ancestor: {}", abs.display()))?
+            .to_os_string();
+        let parent = match current.parent() {
+            Some(p) if !p.as_os_str().is_empty() => p.to_path_buf(),
+            _ => return Err(format!("file_path: walked to root without finding existing dir: {}", abs.display())),
+        };
+        tail.push(name);
+        current = parent;
+    };
+
+    // Reattach tail (in reverse — we pushed from leaf to root).
+    let mut result = canon;
+    for name in tail.into_iter().rev() {
+        result.push(name);
     }
-    // v0.42 fix #2 (Claude+Gemini HIGH): default to $PWD ONLY. Was: $PWD +
-    // $HOME blanket — too permissive, agent could overwrite ~/.claude/hooks/
-    // or ~/.zshrc and self-neuter the safety layer. Operators who need
-    // broader access opt in via KEI_ALLOWED_ROOTS=":" -separated abs paths.
+    Ok(result)
+}
+
+fn allowed_roots() -> Vec<String> {
+    // Canonicalize each entry so symlinked roots (e.g. macOS /var → /private/var,
+    // /tmp → /private/tmp) match canonicalized targets. Trailing slash added
+    // for the consistency-with-default format. v0.44 fix #5 + #6 combined.
+    let canon_with_slash = |raw: &str| -> Option<String> {
+        let p = Path::new(raw);
+        let canon = std::fs::canonicalize(p).unwrap_or_else(|_| p.to_path_buf());
+        let mut s = canon.display().to_string();
+        if !s.ends_with('/') { s.push('/'); }
+        if s.is_empty() { None } else { Some(s) }
+    };
+    if let Ok(v) = std::env::var("KEI_ALLOWED_ROOTS") {
+        return v.split(':')
+            .filter(|s| !s.is_empty())
+            .filter_map(canon_with_slash)
+            .collect();
+    }
     let mut roots = Vec::new();
     if let Ok(cwd) = std::env::current_dir() {
-        roots.push(format!("{}/", cwd.display()));
+        if let Some(r) = canon_with_slash(&cwd.display().to_string()) {
+            roots.push(r);
+        }
     }
     roots
 }
@@ -472,9 +638,9 @@ async fn run_chain(tool: &str, hook_input: &Value) -> Result<(), String> {
             .stdout(Stdio::piped())
             .stderr(Stdio::piped())
             .kill_on_drop(true);
-        // v0.42 fix #5: put hook child in its own process group so timeout
-        // can killpg the whole tree (was: kill_on_drop = immediate child only).
         set_process_group(&mut child_cmd);
+        // v0.44 fix #4: same env-isolation for hook subprocess.
+        apply_safe_env(&mut child_cmd);
 
         let mut child = child_cmd
             .spawn()
