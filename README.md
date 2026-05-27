@@ -57,18 +57,25 @@ sleep consolidates 30-session windows into morning markdown reports.
 - **macOS** (arm64 + x64) — fully supported, primary dev target.
 - **Linux** (Ubuntu, Debian, Fedora, Arch — x64 + arm64) — fully supported.
 - **Windows** — substrate itself is Bash-only, but the **MCP server binary**
-  ships as `kei-mcp-server-windows-x64.exe` in every release. Two
+  ships as `kei-mcp-server-windows-x64.exe` in every release. Three
   recommended paths:
   - **WSL2** (recommended) — install Windows Subsystem for Linux,
     then run `bootstrap.sh` inside Ubuntu/Debian as normal. Full
-    substrate works.
+    substrate works. `bootstrap.sh` auto-detects WSL2 and Git Bash;
+    on bare Windows it prints a one-time WSL setup guide and copies
+    the `wsl --install` command to your clipboard.
   - **MCP-only** — drop `kei-mcp-server-windows-x64.exe` into your
     Claude Desktop / VS Code MCP config to get `spawn_agent` +
     `kei_bash`/`kei_edit`/`kei_write` tools, without the full
     Bash-based substrate. Skills, hooks, and `kei` CLI not available
     in this mode.
-  - Native PowerShell port: not on the roadmap (would double maintenance
-    surface; WSL gives 100% coverage with 0 duplication).
+  - **Native PowerShell port** — demand-driven. WSL gives 100%
+    coverage today with 0 code duplication, so a native `.ps1`
+    substrate isn't built yet. If you want it, open an issue with
+    a thumbs-up on the existing Windows-native tracker (or file
+    one) — once demand is real, we'll build it. The MCP-server
+    binary path already covers the common "just want spawn_agent
+    in Claude Desktop" case.
 
 ## Maturity matrix
 
