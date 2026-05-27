@@ -18,6 +18,8 @@
 use crate::error::AppError;
 use crate::handlers::term_pty::{spawn_pty, PtyBag};
 use crate::state::AppState;
+use crate::tool::path_sandbox;
+use crate::tool::types::ToolError;
 use axum::extract::ws::{Message, WebSocket, WebSocketUpgrade};
 use axum::extract::{Query, State};
 use axum::http::{header, HeaderMap};
@@ -74,7 +76,9 @@ fn validate_origin(headers: &HeaderMap, allowed: &str) -> Result<(), AppError> {
 }
 
 /// Resolve the requested cwd; defaults to project root when unset. Rejects
-/// `..`, absolute paths outside root, and non-directories.
+/// `..`, absolute paths outside root, and non-directories. Delegates the
+/// chroot check to `path_sandbox::enforce_project_root` (SSoT) so any
+/// future tightening of the prefix rule lives in one place.
 fn resolve_cwd(root: &Path, requested: Option<&str>) -> Result<PathBuf, AppError> {
     let req = requested.unwrap_or("");
     if req.contains("..") {
@@ -90,12 +94,11 @@ fn resolve_cwd(root: &Path, requested: Option<&str>) -> Result<PathBuf, AppError
     let canon = candidate
         .canonicalize()
         .map_err(|e| AppError::NotFound(format!("cwd not found: {e}")))?;
-    let root_canon = root
-        .canonicalize()
-        .map_err(|_| AppError::Internal("project_root canonicalize".into()))?;
-    if !canon.starts_with(&root_canon) {
-        return Err(AppError::BadRequest("cwd escapes project_root".into()));
-    }
+    let canon_str = canon.to_string_lossy().into_owned();
+    let canon = path_sandbox::enforce_project_root(&canon_str, root).map_err(|e| match e {
+        ToolError::OutsideRoot(_) => AppError::BadRequest("cwd escapes project_root".into()),
+        _ => AppError::Internal("project_root canonicalize".into()),
+    })?;
     if !canon.is_dir() {
         return Err(AppError::BadRequest("cwd is not a directory".into()));
     }

@@ -7,6 +7,8 @@
 
 use crate::error::AppError;
 use crate::state::AppState;
+use crate::tool::path_sandbox;
+use crate::tool::types::ToolError;
 use axum::extract::{Query, State};
 use axum::Json;
 use serde::{Deserialize, Serialize};
@@ -56,12 +58,16 @@ pub async fn list(
     let root = state.config().project_root.clone();
     let rel = q.path.unwrap_or_default();
     let target = resolve_target(&root, &rel)?;
-    let entries = read_dir_entries(&target)?;
+    let entries = tokio::task::spawn_blocking(move || read_dir_entries(&target))
+        .await
+        .map_err(|e| AppError::Internal(format!("fs_list task join: {e}")))??;
     Ok(Json(build_response(entries)))
 }
 
 /// Resolve `rel` to an absolute path inside `project_root`. Rejects parent
-/// references and absolute paths that escape the root.
+/// references and absolute paths that escape the root. Delegates the
+/// chroot check to `path_sandbox::enforce_project_root` (SSoT); adds the
+/// fs-listing-specific must-exist + must-be-dir semantics on top.
 fn resolve_target(root: &Path, rel: &str) -> Result<PathBuf, AppError> {
     if rel.contains("..") {
         return Err(AppError::BadRequest("path may not contain '..'".into()));
@@ -76,12 +82,11 @@ fn resolve_target(root: &Path, rel: &str) -> Result<PathBuf, AppError> {
     let canon = candidate
         .canonicalize()
         .map_err(|e| AppError::NotFound(format!("path not found: {e}")))?;
-    let root_canon = root
-        .canonicalize()
-        .map_err(|_| AppError::Internal("project_root canonicalize".into()))?;
-    if !canon.starts_with(&root_canon) {
-        return Err(AppError::BadRequest("path escapes project_root".into()));
-    }
+    let canon_str = canon.to_string_lossy().into_owned();
+    let canon = path_sandbox::enforce_project_root(&canon_str, root).map_err(|e| match e {
+        ToolError::OutsideRoot(_) => AppError::BadRequest("path escapes project_root".into()),
+        _ => AppError::Internal("project_root canonicalize".into()),
+    })?;
     if !canon.is_dir() {
         return Err(AppError::BadRequest("path is not a directory".into()));
     }
