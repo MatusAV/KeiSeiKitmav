@@ -110,6 +110,18 @@ case "$PROFILE" in
        exit 2 ;;
 esac
 
+# v0.50 UX: complete-stack profiles imply "install everything, no questions".
+# Auto-pass --yes to install.sh so the confirm-plan + onboarding both skip.
+# User re-runs onboarding via `kei onboard` after install if they want it.
+case "$PROFILE" in
+    full|cortex|full-hub|dashboard|local-mirror)
+        if [ -z "$YES_FLAG" ]; then
+            YES_FLAG="--yes"
+            echo "[bootstrap] profile=$PROFILE → auto --yes (no prompts; run 'kei onboard' later for guided setup)"
+        fi
+        ;;
+esac
+
 # --- helpers -------------------------------------------------------------
 log()  { echo "[bootstrap] $*"; }
 err()  { echo "[bootstrap] ERROR: $*" >&2; }

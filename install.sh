@@ -223,6 +223,29 @@ fi
 # Banner всегда EN — пользователь ещё не выбрал язык.
 # Wizard: TTY + нет ~/.claude/.onboarded + не задан KEISEI_SKIP_ONBOARD.
 # Skip: KEISEI_SKIP_ONBOARD=1 ./install.sh
+#
+# v0.50 UX: spare the user from 3 sequential prompts (profile already chosen,
+# then transport, then stack) when their intent is clear:
+#   1. --yes was passed → user is non-interactive, no prompts
+#   2. profile is "I want everything" (full / cortex / full-hub / dashboard /
+#      local-mirror) → install everything, defer per-stack tuning to
+#      `kei onboard` later if they want it.
+# `kei onboard` re-runs the wizard anytime.
+_skip_reason=""
+if [ "${ASSUME_YES:-0}" = "1" ]; then
+    _skip_reason="--yes"
+fi
+case "$PROFILE" in
+    full|cortex|full-hub|dashboard|local-mirror)
+        [ -z "$_skip_reason" ] && _skip_reason="profile=$PROFILE"
+        ;;
+esac
+if [ -n "$_skip_reason" ]; then
+    say "skipping onboarding wizard ($_skip_reason) — run 'kei onboard' anytime for guided setup"
+    export KEISEI_SKIP_ONBOARD=1
+fi
+unset _skip_reason
+
 if onboarding_should_run; then
   i18n_print_welcome
 fi
