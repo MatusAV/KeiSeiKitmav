@@ -46,11 +46,29 @@ sleep consolidates 30-session windows into morning markdown reports.
   updates, agent regeneration, DNA index refresh, keimd graph
   reindex. Auto-self-indexing via kei-registry SQLite.
 
-## By the numbers (v0.46)
+## By the numbers (v0.47)
 
 110 Rust crates · 69 skills · 54 hooks · 38 agent manifests ·
 86 substrate blocks · 18 capability atoms · 7 substrate roles ·
 565 indexed DNAs · 6 install profiles (minimal → full).
+
+## Platforms
+
+- **macOS** (arm64 + x64) — fully supported, primary dev target.
+- **Linux** (Ubuntu, Debian, Fedora, Arch — x64 + arm64) — fully supported.
+- **Windows** — substrate itself is Bash-only, but the **MCP server binary**
+  ships as `kei-mcp-server-windows-x64.exe` in every release. Two
+  recommended paths:
+  - **WSL2** (recommended) — install Windows Subsystem for Linux,
+    then run `bootstrap.sh` inside Ubuntu/Debian as normal. Full
+    substrate works.
+  - **MCP-only** — drop `kei-mcp-server-windows-x64.exe` into your
+    Claude Desktop / VS Code MCP config to get `spawn_agent` +
+    `kei_bash`/`kei_edit`/`kei_write` tools, without the full
+    Bash-based substrate. Skills, hooks, and `kei` CLI not available
+    in this mode.
+  - Native PowerShell port: not on the roadmap (would double maintenance
+    surface; WSL gives 100% coverage with 0 duplication).
 
 ## Maturity matrix
 

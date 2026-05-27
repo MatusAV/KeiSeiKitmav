@@ -230,3 +230,22 @@ log "  - Or source the rc file the installer wrote (Bash: ~/.bashrc, Zsh: ~/.zsh
 log "  - Run kei-doctor for a full health diagnostic."
 log "  - For cortex profile: run /cortex-setup inside Claude Code."
 log "  - For sleep layer: run /sleep-setup inside Claude Code."
+
+# v0.47: offer to launch `kei` for a first status look.
+# Gate on stdin TTY only (rule: tty-interactivity-gate.md) — `-t 1` would
+# falsely skip under curl|bash because the bootstrap log tees stdout.
+KEI_BIN_PATH="$HOME/.claude/bin/kei"
+if [ -x "$KEI_BIN_PATH" ] && [ -t 0 ] && [ "${KEI_NO_AUTORUN:-0}" != "1" ]; then
+    log ""
+    printf '  → Запустить kei сейчас? [Y/n] ' >&2
+    read -r _reply </dev/tty || _reply=""
+    case "${_reply:-Y}" in
+        [Nn]*)
+            log "  (skipped — run 'kei' anytime to see substrate status)"
+            ;;
+        *)
+            log ""
+            "$KEI_BIN_PATH" || true
+            ;;
+    esac
+fi
