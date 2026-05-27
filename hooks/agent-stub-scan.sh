@@ -9,8 +9,8 @@
 # dead-code in production. Mirrors the flatten pattern from
 # `agent-event-done.sh` so both hooks share one shape.
 #
-# TODO(2026-05-05): flip WARN -> ENFORCE per RULE 0.16 §2 ladder.
-# Until then, every inconsistency exits 0 with stderr only.
+# ENFORCE tier (flipped 2026-05-27 per RULE 0.16 §2 ladder; was WARN until
+# 2026-05-05). Inconsistencies now exit 1, blocking the agent's tool call.
 set -u
 
 log_block() {
@@ -45,8 +45,7 @@ if ! printf '%s' "$RESPONSE" | grep -q '=== STATUS-TRUTH MARKER ==='; then
     log_block "MISSING STATUS-TRUTH MARKER block in agent response.
 RULE 0.16 §1 requires every code-implementer agent to emit the marker.
 Add the block to the agent's final report; see ~/.claude/rules/shipped-vs-functional.md"
-    # WARN tier (until 2026-05-05): exit 0 with stderr. After: exit 1.
-    exit 0
+    exit 1
 fi
 
 SHIPPED=$(printf '%s' "$RESPONSE" | grep -m1 '^shipped:' \
@@ -59,8 +58,7 @@ if [ "$SHIPPED" = "functional" ] && [ "${STUB_COUNT:-0}" -gt 0 ]; then
 First locations:
 $LOCS
 Either downgrade shipped to 'partial'/'scaffolding' or remove the stubs."
-    # WARN tier (until 2026-05-05): exit 0. After: exit 1.
-    exit 0
+    exit 1
 fi
 
 log_block "OK: shipped=$SHIPPED, stubs=${STUB_COUNT:-0} (consistent)."

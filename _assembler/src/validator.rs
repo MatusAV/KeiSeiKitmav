@@ -15,11 +15,6 @@ use std::path::Path;
 
 pub const OBLIGATORY: &[&str] = &["baseline", "evidence-grading", "memory-protocol"];
 
-/// Back-compat alias for external callers. The SSoT lives in
-/// `schemas_export::BUILTIN`.
-#[allow(dead_code)]
-pub const KNOWN_ARTIFACT_SCHEMAS: &[&str] = schemas_export::BUILTIN;
-
 pub fn validate(m: &Manifest, blocks_dir: &Path) -> Result<(), String> {
     check_obligatory_blocks(m)?;
     check_blocks_exist(m, blocks_dir)?;

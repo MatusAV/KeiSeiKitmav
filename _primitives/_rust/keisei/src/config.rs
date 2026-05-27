@@ -70,12 +70,12 @@ impl AttachRecord {
         }
     }
 
-    #[allow(dead_code)]
+    #[allow(dead_code)] // used by tests/integration.rs (loaded via #[path]); bin doesn't call.
     pub fn has_client(&self, client: &str) -> bool {
         self.attachments.iter().any(|a| a.client_type == client)
     }
 
-    #[allow(dead_code)]
+    #[allow(dead_code)] // used by tests/integration.rs (loaded via #[path]); bin doesn't call.
     pub fn client_names(&self) -> Vec<String> {
         self.attachments
             .iter()
@@ -83,7 +83,7 @@ impl AttachRecord {
             .collect()
     }
 
-    #[allow(dead_code)]
+    #[allow(dead_code)] // used by tests/integration.rs (loaded via #[path]); bin doesn't call.
     pub fn brain_names(&self) -> Vec<String> {
         let mut out: Vec<String> = Vec::new();
         for a in &self.attachments {
