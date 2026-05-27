@@ -145,7 +145,7 @@ backend_invoke() {
       printf '[kei-agent-cli] (or pipe via `kimi acp` if you have an ACP client.)\n' >&2
       exec "$bin"
       ;;
-    codex)                exec "$bin" -p "$prompt" ;;
+    codex)                exec "$bin" exec "$prompt" ;;
   esac
 }
 

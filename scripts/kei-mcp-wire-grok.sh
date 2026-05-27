@@ -46,7 +46,7 @@ if [ -n "$KEI_MCP_BIN" ] && [ -x "$KEI_MCP_BIN" ]; then
   "mcpServers": {
     "kei-mcp": {
       "command": "$KEI_MCP_BIN",
-      "env": { "GROKCODE": "1" }
+      "env": {}
     }
   }
 }
@@ -73,5 +73,5 @@ mv "$tmp" "$CFG"
 
 echo "  grok: wired PreToolUse hooks → $CFG"
 echo "         5 hook entries (Bash×3 + Edit×2 + Write×2)"
-[ -n "$mcp_block" ] && echo "         kei-mcp MCP server registered (with GROKCODE=1 guard)"
+[ -n "$mcp_block" ] && echo "         kei-mcp MCP server registered (v0.46: chain always runs, no env-skip)"
 echo "         Same enforcement as Claude Code."

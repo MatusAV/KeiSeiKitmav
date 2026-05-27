@@ -31,12 +31,15 @@ if [ "${KEI_WIRE_CHECK:-0}" = "1" ] || [ "${KEI_WIRE_DRY_RUN:-0}" = "1" ]; then
     "mcpServers": {
       "kei-mcp": {
         "command": "$BIN",
-        "env": { "CLAUDECODE": "1" }
+        "env": {}
       }
     }
   }
 
-  (CLAUDECODE=1 tells kei-mcp to skip its hook chain — your native hooks
-   already fire on PreToolUse. Avoids double-enforcement.)
+  (v0.46: CLAUDECODE/GROKCODE env-skip was removed — the chain runs
+   always now. Native PreToolUse hooks fire on tool_name='Bash'/'Edit'/
+   'Write', but MCP tools are named kei_bash/kei_edit/kei_write, so
+   native hooks would NOT fire anyway — there is no double-enforcement
+   to avoid. Empty env block left in case operators add their own vars.)
 EOF
 fi
