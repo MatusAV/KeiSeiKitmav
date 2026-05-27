@@ -227,6 +227,19 @@ log "checkout: $KIT_DIR"
 # --- 5. run install ------------------------------------------------------
 log "running install.sh --profile=$PROFILE $YES_FLAG ${EXTRA_FLAGS[*]:-}"
 cd "$KIT_DIR"
+
+# v0.48: reattach stdin to /dev/tty for the install + everything after.
+# Under `curl|bash` stdin is the curl pipe, so install.sh's interactive
+# gates (5 places: language pick, preflight, hooks-activate, sleep wizard,
+# PATH wiring) all silently skip via [ -t 0 ] being false. Reattaching ONCE
+# here cascades correctly: every child script inherits the terminal stdin
+# and its [ -t 0 ] returns true. Only do it if /dev/tty is actually
+# present and readable (CI / nohup / systemd: skip — those are headless).
+if [ -r /dev/tty ] && [ -w /dev/tty ]; then
+    exec </dev/tty
+    log "stdin reattached to /dev/tty (curl|bash interactive prompts will work)"
+fi
+
 # Defensive: invoke via `bash` not `./install.sh` because GitHub's contents
 # API does NOT preserve the executable bit on `gh api -X PUT` updates
 # (only the git Data API does). Older clones may have install.sh with
@@ -253,9 +266,10 @@ log "===========================================================================
 log "DONE — KeiSeiKit installed (profile: $PROFILE)"
 log "==========================================================================="
 
-# v0.45: post-install onboarding wizard.
-# Auto-triggers if stdin is a TTY (real terminal). Wizard itself re-checks
-# and exits cleanly if non-interactive — so curl|bash one-liner runs work too.
+# v0.48: post-install onboarding wizard.
+# stdin already reattached to /dev/tty above (when present), so [ -t 0 ]
+# inside this scope correctly reports interactive vs headless. Wizard
+# itself re-checks and exits cleanly if non-interactive.
 ONBOARD_SH="$HOME/.claude/scripts/kei-onboard.sh"
 if [ -x "$ONBOARD_SH" ] && [ -t 0 ] && [ "${KEI_NO_ONBOARD:-0}" != "1" ]; then
   log ""
@@ -279,14 +293,15 @@ log "  - Run kei-doctor for a full health diagnostic."
 log "  - For cortex profile: run /cortex-setup inside Claude Code."
 log "  - For sleep layer: run /sleep-setup inside Claude Code."
 
-# v0.47: offer to launch `kei` for a first status look.
-# Gate on stdin TTY only (rule: tty-interactivity-gate.md) — `-t 1` would
-# falsely skip under curl|bash because the bootstrap log tees stdout.
+# v0.48: offer to launch `kei` for a first status look.
+# stdin was reattached to /dev/tty above (when present), so [ -t 0 ] is
+# now true under curl|bash too. Simple gate works correctly.
 KEI_BIN_PATH="$HOME/.claude/bin/kei"
 if [ -x "$KEI_BIN_PATH" ] && [ -t 0 ] && [ "${KEI_NO_AUTORUN:-0}" != "1" ]; then
     log ""
-    printf '  → Запустить kei сейчас? [Y/n] ' >&2
-    read -r _reply </dev/tty || _reply=""
+    printf '  → Запустить kei сейчас? [Y/n] '
+    _reply=""
+    read -r _reply || _reply=""
     case "${_reply:-Y}" in
         [Nn]*)
             log "  (skipped — run 'kei' anytime to see substrate status)"
