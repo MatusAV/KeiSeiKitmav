@@ -196,7 +196,7 @@ members = [
 [workspace.package]
 edition = "2021"
 rust-version = "1.77"
-authors = ["Denis Parfionovich <info@greendragon.info>"]
+authors = ["KeiSei LLC <hello@keilab.io>", "Denis Parfionovich <parfionovich@keilab.io>"]
 license = "Apache-2.0"
 repository = "https://github.com/KeiSeiLab/KeiSeiKit"
 homepage = "https://github.com/KeiSeiLab/KeiSeiKit"

@@ -152,6 +152,8 @@ _dhz_print_banner() {
 
 # Public — install entry point. Called from install.sh primitives phase.
 install_dev_hub_zoekt() {
+  # v0.55 Linux-compat: skip on non-macOS (sourced via lib-os.sh).
+  kei_require_macos "dev-hub zoekt" || return 0
   say "[dev-hub-zoekt] install starting"
   # shellcheck source=./lib-launchd.sh
   . "$KIT_DIR/install/lib-launchd.sh"   # install_service / detect_brew_prefix (was unsourced → command not found)

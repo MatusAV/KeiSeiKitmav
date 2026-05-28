@@ -151,6 +151,8 @@ _dhr_init_repo() {
 
 # Public — install entry point. Called from install.sh primitives phase.
 install_dev_hub_restic() {
+  # v0.55 Linux-compat: skip on non-macOS (sourced via lib-os.sh).
+  kei_require_macos "dev-hub restic" || return 0
   say "[dev-hub-restic] install starting"
   _dhr_brew_and_dirs    || return 1
   write_excludes_file   || return 1

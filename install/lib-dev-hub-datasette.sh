@@ -118,6 +118,8 @@ discover_databases() {
 
 # Install Datasette + plugins + launchd service. Idempotent.
 install_dev_hub_datasette() {
+  # v0.55 Linux-compat: skip on non-macOS (sourced via lib-os.sh).
+  kei_require_macos "dev-hub datasette" || return 0
   say "installing dev-hub-datasette"
   _datasette_check_python || return 1
   _datasette_ensure_pipx || return 1

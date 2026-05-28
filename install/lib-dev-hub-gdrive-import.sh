@@ -177,6 +177,8 @@ _dhgi_deploy_to_path() {
 
 # via `install_external_primitive` (kind=external in MANIFEST.toml).
 install_dev_hub_gdrive_import() {
+  # v0.55 Linux-compat: skip on non-macOS (sourced via lib-os.sh).
+  kei_require_macos "dev-hub gdrive-import" || return 0
   say "[dev-hub-gdrive-import] install starting"
   _dhgi_check_brew         || return 1
   _dhgi_brew_install       || return 1

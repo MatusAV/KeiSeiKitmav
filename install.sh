@@ -74,9 +74,14 @@ else
     }
 fi
 
-# --- source cubes (order matters: logs -> backup -> profile -> rest) ------
+# --- source cubes (order matters: logs -> os -> backup -> profile -> rest) -
 # shellcheck source=install/lib-log.sh
 source "$LIB_DIR/lib-log.sh"
+# v0.55 Linux-compat: OS detection + XDG paths cube. Sourced BEFORE dev-hub-*
+# libs so they can use $KEI_DATA_DIR / $KEI_LOG_DIR / $KEI_SVC_MANAGER and
+# call kei_require_macos to skip-with-warn on Linux.
+# shellcheck source=install/lib-os.sh
+source "$LIB_DIR/lib-os.sh"
 # shellcheck source=install/lib-backup.sh
 source "$LIB_DIR/lib-backup.sh"
 # shellcheck source=install/lib-profile.sh

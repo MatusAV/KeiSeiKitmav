@@ -150,6 +150,8 @@ regenerate_summary() {
 # Install mdBook + render config + first build + register both launchd agents.
 # Idempotent.
 install_dev_hub_mdbook() {
+  # v0.55 Linux-compat: skip on non-macOS (sourced via lib-os.sh).
+  kei_require_macos "dev-hub mdbook" || return 0
   say "installing dev-hub-mdbook"
   _mdbook_check_cargo || return 1
   _mdbook_install_binary

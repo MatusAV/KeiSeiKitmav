@@ -113,6 +113,8 @@ _register_act_runner() {
 
 # Public entry: install + register + bootstrap the runner.
 install_dev_hub_forgejo_runner() {
+  # v0.55 Linux-compat: skip on non-macOS (sourced via lib-os.sh).
+  kei_require_macos "dev-hub forgejo-runner" || return 0
   say "installing dev-hub-forgejo-runner (Forgejo Actions runner)"
   _require_forgejo_binary || return 1
   _require_forgejo_running || return 1
