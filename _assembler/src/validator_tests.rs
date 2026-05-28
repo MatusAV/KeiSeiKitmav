@@ -14,6 +14,7 @@ fn base() -> Manifest {
         description: "d".into(),
         tools: vec!["Read".into()],
         model: "opus".into(),
+        provider: None,
         role: "r".into(),
         blocks: vec![
             "baseline".into(),

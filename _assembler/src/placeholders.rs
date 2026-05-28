@@ -79,6 +79,7 @@ mod tests {
             description: "d".into(),
             tools: vec!["Read".into()],
             model: "opus".into(),
+            provider: None,
             role: "r".into(),
             blocks: vec!["baseline".into(), "evidence-grading".into(), "memory-protocol".into()],
             domain_in: vec!["x".into()],
