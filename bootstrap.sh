@@ -84,8 +84,16 @@ prompt_profile() {
 
 WIZARD
     local choice=""
+    # v0.59: under curl|bash, stdin is the curl pipe — `read` from stdin
+    # gets nothing or EOF. Read from /dev/tty explicitly so the wizard
+    # actually waits for the user's input.
+    local _read_src=/dev/stdin
+    if [ -r /dev/tty ] && (exec 0</dev/tty) 2>/dev/null; then
+        _read_src=/dev/tty
+    fi
     while true; do
-        read -r -p "Pick a profile [1-6, default=2]: " choice
+        printf 'Pick a profile [1-6, default=2]: ' >&2
+        read -r choice <"$_read_src" || choice=""
         choice="${choice:-2}"
         case "$choice" in
             1) PROFILE="minimal";      break ;;
@@ -100,6 +108,39 @@ WIZARD
     echo "[bootstrap] profile selected: $PROFILE"
     echo
 }
+
+# --- helpers -------------------------------------------------------------
+log()  { echo "[bootstrap] $*"; }
+err()  { echo "[bootstrap] ERROR: $*" >&2; }
+have() { command -v "$1" >/dev/null 2>&1; }
+
+# v0.49 → v0.59: source the interactive-prompt cube BEFORE prompt_profile()
+# is invoked. Previously the source happened AFTER prompt_profile, so
+# `kei_is_interactive` was an unbound name; `! kei_is_interactive` then
+# evaluated as "command not found" + `!`-flip = true → PROFILE silently
+# became "minimal" regardless of user input or TTY availability. That's
+# why users running `curl|bash` on Linux saw 0-primitive minimal even
+# with a real terminal attached.
+_KIT_DIR_PRE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+if [ -r "$_KIT_DIR_PRE/scripts/kei-prompt.sh" ]; then
+    # shellcheck source=scripts/kei-prompt.sh
+    . "$_KIT_DIR_PRE/scripts/kei-prompt.sh"
+elif [ -r "$HOME/.claude/scripts/kei-prompt.sh" ]; then
+    # shellcheck disable=SC1091
+    . "$HOME/.claude/scripts/kei-prompt.sh"
+else
+    # Self-contained fallback so bootstrap never breaks when run from a
+    # weird directory. Mirrors kei_is_interactive's contract only.
+    # v0.49.2: probe open(/dev/tty) in subshell — `[ -r /dev/tty ]` lies
+    # in some envs (CI, sandbox); a bare `read </dev/tty` then dies under set -e.
+    kei_is_interactive() {
+        [ "${KEI_NONINTERACTIVE:-0}" = "1" ] && return 1
+        if [ -r /dev/tty ] && [ -w /dev/tty ] && (exec 0</dev/tty) 2>/dev/null; then return 0; fi
+        [ -t 0 ] && return 0
+        return 1
+    }
+fi
+unset _KIT_DIR_PRE
 
 prompt_profile
 
@@ -121,37 +162,6 @@ case "$PROFILE" in
         fi
         ;;
 esac
-
-# --- helpers -------------------------------------------------------------
-log()  { echo "[bootstrap] $*"; }
-err()  { echo "[bootstrap] ERROR: $*" >&2; }
-have() { command -v "$1" >/dev/null 2>&1; }
-
-# v0.49: source the interactive-prompt cube (Constructor Pattern: ONE place
-# where all interactivity logic lives). Tries kit-local path first (when
-# running from a clone / curl|bash via cloned checkout), then installed
-# path (when bootstrap re-runs from $HOME/.claude). Last-resort inline
-# fallback if neither found — keeps the script self-bootable.
-_KIT_DIR_PRE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-if [ -r "$_KIT_DIR_PRE/scripts/kei-prompt.sh" ]; then
-    # shellcheck source=scripts/kei-prompt.sh
-    . "$_KIT_DIR_PRE/scripts/kei-prompt.sh"
-elif [ -r "$HOME/.claude/scripts/kei-prompt.sh" ]; then
-    # shellcheck disable=SC1091
-    . "$HOME/.claude/scripts/kei-prompt.sh"
-else
-    # Self-contained fallback so bootstrap never breaks when run from a
-    # weird directory. Mirrors kei_is_interactive's contract only.
-    # v0.49.2: probe open(/dev/tty) in subshell — `[ -r /dev/tty ]` lies
-    # in some envs (CI, sandbox); a bare `read </dev/tty` then dies under set -e.
-    kei_is_interactive() {
-        [ "${KEI_NONINTERACTIVE:-0}" = "1" ] && return 1
-        if [ -r /dev/tty ] && [ -w /dev/tty ] && (exec 0</dev/tty) 2>/dev/null; then return 0; fi
-        [ -t 0 ] && return 0
-        return 1
-    }
-fi
-unset _KIT_DIR_PRE
 
 OS="$(uname -s)"
 
