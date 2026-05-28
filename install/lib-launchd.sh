@@ -2,6 +2,9 @@ set -e
 # shellcheck shell=bash
 # lib-launchd.sh — render launchd plist templates + load/unload lifecycle.
 #
+# MACOS-ONLY. Each function tops with `kei_require_macos || return 0` so on
+# Linux these are no-ops. lib-os.sh must be sourced before lib-launchd.sh.
+#
 # Used by all `lib-dev-hub-*.sh` scripts. Substitutes ${HOME}/${USER}/${BREW}/
 # ${KIT}/${LOGS}/${DATA} placeholders inside `install/launchd-templates/<svc>.plist.tmpl`,
 # writes the rendered file to `~/Library/LaunchAgents/com.keisei.<svc>.plist`,
@@ -9,7 +12,7 @@ set -e
 #
 # Idempotent: re-running renders → bootout-old → bootstrap-new.
 #
-# Requires: say / err from lib-log.sh.
+# Requires: say / err from lib-log.sh, KEI_OS from lib-os.sh.
 # Reads globals: $KIT_DIR, $HOME_DIR.
 
 # Compute the brew prefix once. macOS arm64 = /opt/homebrew, intel = /usr/local.
@@ -29,6 +32,7 @@ detect_brew_prefix() {
 # Args: <service-name> (without .plist.tmpl extension).
 # Returns: rendered plist path on stdout. Exits 1 on missing template.
 render_plist() {
+  kei_require_macos "lib-launchd render_plist" || return 0
   local svc="$1"
   local tmpl="$KIT_DIR/install/launchd-templates/${svc}.plist.tmpl"
   if [ ! -f "$tmpl" ]; then
@@ -63,6 +67,7 @@ render_plist() {
 # Bootstrap (load) a rendered plist via launchctl.
 # Args: <plist-path>. Idempotent: bootout-old first if already loaded.
 bootstrap_plist() {
+  kei_require_macos "lib-launchd bootstrap_plist" || return 0
   local plist="$1"
   local label
   label="$(/usr/bin/awk '/<key>Label<\/key>/ { getline; gsub(/.*<string>|<\/string>.*/, ""); print; exit }' "$plist")"
