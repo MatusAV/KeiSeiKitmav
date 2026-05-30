@@ -77,6 +77,14 @@ case "${1:-}" in
     shift
     exec "$HOME/.claude/scripts/kei-onboard.sh" "$@"
     ;;
+  status|health)
+    # `kei status` — show splash + health summary, then exit (no claude).
+    # Equivalent to `kei --status`. Previously this verb fell through to
+    # the wrapper and silently launched claude — confusing for `kei status`
+    # CI checks or shell aliases.
+    shift
+    set -- --status "$@"
+    ;;
 esac
 
 # --- one-shot --on=<backend> override (does not write primary.toml) -------
@@ -168,6 +176,19 @@ agent_count() {
   printf '%s' "$n"
 }
 
+# Substrate version — read from installed plugin.json (or fallback).
+# Single SSoT: plugin.json. Don't hardcode in splash again.
+substrate_version() {
+  local pj
+  for pj in "$HOME/.claude/plugin.json" "$HOME/.local/share/keisei/plugin.json"; do
+    if [ -f "$pj" ]; then
+      sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "$pj" | head -1
+      return
+    fi
+  done
+  echo "unknown"
+}
+
 # Profile from .installed marker file
 profile_name() {
   # install.sh stamps the chosen profile here; .installed only holds primitive
@@ -248,7 +269,7 @@ ${C1}    ██╔═██╗ ██╔══╝  ██║╚════█�
 ${C1}    ██║  ██╗███████╗██║███████║███████╗██║${C0}
 ${C1}    ╚═╝  ╚═╝╚══════╝╚═╝╚══════╝╚══════╝╚═╝${C0}
 
-${C2}    KeiSeiKit · substrate v0.53${C0}
+${C2}    KeiSeiKit · substrate v$(substrate_version)${C0}
 ${C3}    ─────────────────────────────────────${C0}
       primary CLI    : ${CV}${PRIMARY}${C0}
       profile        : ${CV}${p}${C0}

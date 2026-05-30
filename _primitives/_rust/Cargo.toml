@@ -10,6 +10,10 @@ members = [
     "kei-conflict-scan",
     "kei-refactor-engine",
     "kei-graph-check",
+    # v0.63 (2026-05-30 audit H3): kei-graph-stream was using
+    # `edition.workspace = true` inheritance but missing from members —
+    # standalone `cargo check` errored out. Added here.
+    "kei-graph-stream",
     "kei-store",
     # v0.14 LBM port — 10 new MCP-core primitives
     "kei-router",
@@ -189,6 +193,11 @@ members = [
     # Wave N+1 — iCloud CardDAV thin client (Basic Auth, Vec<AppleContact>-out)
     "kei-contacts-apple",
 ]
+
+# v0.63 (2026-05-30 audit H3): kei-model-router declares its own [workspace]
+# (own sub-workspace for faster iteration on the router crate). Cargo refuses
+# to discover it from the umbrella unless we exclude it explicitly.
+exclude = ["kei-model-router"]
 
 [workspace.package]
 edition = "2021"

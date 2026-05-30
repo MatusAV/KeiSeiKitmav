@@ -1,4 +1,5 @@
 {
+  "_comment": "Claude Code PLUGIN-format hook manifest. Used only when the user installs KeiSeiKit via `/plugin install keisei@keisei-marketplace`. The plugin loader picks the subset of hooks Claude Code natively exposes via the plugin API. For the FULL hook set (53 scripts) the user installs via classic `./bootstrap.sh` and merges `settings-snippet.json` into their own `~/.claude/settings.json` (see `bootstrap.sh --activate-hooks`). The two files intentionally differ — plugin format = curated subset, settings-snippet = canonical full set.",
   "hooks": {
     "PostToolUse": [
       {

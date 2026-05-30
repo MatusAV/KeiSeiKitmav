@@ -41,16 +41,18 @@ sleep consolidates 30-session windows into morning markdown reports.
   embeddings.
 - **Constructor Pattern.** Substrate, not framework. You compose; it
   doesn't dictate workflow. File >200 LOC → decompose. No mixins, no
-  DI containers, no abstract factories.
+  DI containers, no abstract factories in user code. (Backend dispatch
+  via `Box<dyn Trait>` — e.g. `kei-store::factory::build_store` selecting
+  between filesystem / s3 / github / forgejo / gitea memory backends —
+  is canonical Rust and stays.)
 - **Self-maintaining.** Every substrate edit cascades: registry
   updates, agent regeneration, DNA index refresh, keimd graph
   reindex. Auto-self-indexing via kei-registry SQLite.
 
-## By the numbers (v0.51.1)
+## By the numbers (v0.63.0)
 
-110 Rust crates · 69 skills · 54 hooks · 38 agent manifests ·
-86 substrate blocks · 18 capability atoms · 7 substrate roles ·
-565 indexed DNAs · 6 install profiles (minimal → full).
+109 Rust crates · 52 skills · 53 hooks · 37 agent manifests ·
+83 substrate blocks · 11 install profiles (minimal → full).
 
 ## Platforms
 
@@ -141,37 +143,33 @@ curl -fsSL https://install.keisei.app | bash -s -- --profile=full --yes
 /plugin install keisei@keisei-marketplace
 ```
 
-### 3. GitHub clone (private repo — needs `gh auth login` first)
+### 3. GitHub clone
 
 ```bash
-gh auth login
-gh repo clone KeiSeiLab/KeiSeiKit ~/keisei
+git clone https://github.com/KeiSeiLab/KeiSeiKit.git ~/keisei
 cd ~/keisei && ./bootstrap.sh --profile=full
 ```
 
 ### 4. Manual (any MCP-compatible client — Cursor / Continue / Zed / Aider)
 
-Repo is **private** — `git clone` will fail without HTTPS credentials. Two options:
-
 ```bash
-# Option A — authenticate git via gh CLI (one-time)
-gh auth login && gh auth setup-git
 git clone https://github.com/KeiSeiLab/KeiSeiKit.git
 cd KeiSeiKit && ./bootstrap.sh
-
-# Option B — SSH (one-time: add your ssh key to your github account)
-git clone git@github.com:KeiSeiLab/KeiSeiKit.git
-cd KeiSeiKit && ./bootstrap.sh
 ```
+
+Re-running `./bootstrap.sh --activate-hooks` merges
+`settings-snippet.json` into your `~/.claude/settings.json` (gives
+Claude Code access to the substrate's `PreToolUse` / `PostToolUse`
+guards).
 
 `web-install.sh` (served at `install.keisei.app`) is a thin curl-pipeable
 wrapper that clones the repo and delegates to `bootstrap.sh` — single
 source of truth, no duplicated install logic.
 
-38 agents + 69 skills + 54 hooks + nightly consolidation wired in
-~60 seconds. Twelve install profiles (`outcome-only`, `minimal`,
-`core`, `frontend`, `ops`, `dev`, `mcp`, `cortex`, `local-mirror`,
-`dashboard`, `full-hub`, `full`) defined in
+37 agents + 52 skills + 53 hooks + nightly consolidation wired
+in under a minute on a clean machine. Install profiles
+(`outcome-only`, `minimal`, `core`, `ops`, `dev`, `mcp`, `cortex`,
+`local-mirror`, `dashboard`, `full-hub`, `full`) defined in
 `_primitives/MANIFEST.toml` and documented in
 [`docs/INSTALL.md`](./docs/INSTALL.md). For non-Claude-Code clients
 (Cursor / Continue / Zed / Aider) the bridges format the same source
@@ -368,7 +366,7 @@ private repo for productisation.
 
 ## Architecture
 
-Stack: **Rust core** (105 workspace crates, ≤2 MB each, 12-trait runtime
+Stack: **Rust core** (109 workspace crates, ≤2 MB each, 12-trait runtime
 + plugin registry) + **TypeScript glue** (6 adapters: gmail / grok /
 recall / telegram / youtube / mcp-server). Backend impls cover:
 

@@ -6,9 +6,8 @@
 #     ./bootstrap.sh --profile=core     # explicit profile
 #     ./bootstrap.sh --yes              # non-interactive (CI / scripts)
 #
-# Usage from a fresh machine (private repo, gh CLI required for clone):
-#     gh auth login
-#     gh repo clone KeiSeiLab/KeiSeiKit
+# Usage from a fresh machine:
+#     git clone https://github.com/KeiSeiLab/KeiSeiKit.git
 #     cd KeiSeiKit && ./bootstrap.sh
 #
 # What it does (idempotent — re-running is safe):
@@ -19,10 +18,15 @@
 #     5. Runs install.sh with the chosen profile
 #     6. Health-checks the install via kei-doctor (best-effort)
 #
-# What it does NOT do (these are still YOUR responsibility):
-#     - Set up SSH keys for github (use `gh auth login` first)
+# Flags:
+#     --profile=<name>     install profile (see install.sh --list)
+#     --yes                non-interactive (CI / scripts)
+#     --activate-hooks     merge settings-snippet.json into
+#                          ~/.claude/settings.json so Claude Code wires
+#                          the substrate's PreToolUse / PostToolUse guards
+#
+# What it does NOT do (still YOUR responsibility):
 #     - Configure secrets per RULE 0.8 (~/.claude/secrets/.env)
-#     - Activate Claude Code hooks (re-run with --activate-hooks if needed)
 
 set -euo pipefail
 

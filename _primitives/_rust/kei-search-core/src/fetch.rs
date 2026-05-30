@@ -1,7 +1,15 @@
 //! Source fetcher trait — frozen interface, default impl is a no-op stub.
 //!
-//! Actual WebFetch/WebSearch integration is out-of-scope for v0.14 part A.
-//! Later milestones plug real providers (anthropic-websearch, SerpAPI, etc.).
+//! Note: the user-facing `/research` skill does NOT depend on this crate.
+//! `/research` runs inside Claude Code and uses the built-in WebFetch /
+//! WebSearch tools + parallel Agent spawns; it's fully functional today.
+//!
+//! `kei-search-core` is a separate scaffold for FUTURE Rust-side automation
+//! that needs programmatic web search (e.g. nightly knowledge consolidation
+//! without a Claude session). Real providers plug into this trait
+//! (anthropic-websearch, SerpAPI, Brave Search API, ...). StubFetcher
+//! exists so `cargo build --workspace` stays green while the rest of the
+//! crate is being designed.
 
 use crate::types::Source;
 

@@ -1,23 +1,23 @@
 set -e
 # shellcheck shell=bash
-# lib-preflight.sh — диспетчер preflight-проверок CLI.
+# lib-preflight.sh — CLI preflight-check dispatcher.
 #
-# Контракт:
+# Contract:
 #   preflight_run <provider-id>
-#       1. Ищет файл install/preflight/<provider-id>.sh
-#       2. Если есть — source'ит и вызывает `preflight_check_<sanitized-id>`
-#       3. Функция возвращает 0 (ok) / 1 (missing, инструкция напечатана)
-#       4. Если файла нет — провайдеру CLI не нужен, тихо exit 0
+#       1. Looks for install/preflight/<provider-id>.sh
+#       2. If present — sources it and invokes `preflight_check_<sanitized-id>`
+#       3. The function returns 0 (ok) / 1 (missing — instruction printed)
+#       4. If the file is absent — provider needs no CLI; silently exit 0
 #
-# Файл per-provider должен экспортировать ОДНУ функцию:
-#   preflight_check_<id>() — печатает инструкцию в stderr, exit 0/1
+# Each per-provider file must export ONE function:
+#   preflight_check_<id>() — prints instruction to stderr; exits 0 or 1
 #
-# Sanitize: dashes в id заменяются на underscores для имени функции
-# (bash не любит dashes в идентификаторах).
+# Sanitize: dashes in the id are replaced with underscores for the function
+# name (bash dislikes dashes in identifiers).
 
 PREFLIGHT_DIR="${LIB_DIR:-$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)}/preflight"
 
-# Печатает инструкцию по установке, спрашивает действие.
+# Print install instructions and ask what to do.
 # Args: $1 — CLI name, $2 — install command.
 preflight_offer_install() {
   local cli="$1"
