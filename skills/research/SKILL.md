@@ -109,8 +109,8 @@ Options (pick ONE):
 ```
 
 Also accept `--backends=multi` as a direct CLI flag (skips the third
-prompt). Skip the prompt entirely on Mode A — multi-LLM not worth the
-plumbing for 3-5 agents.
+prompt). The prompt fires on **every** Mode (A / B / C) — user always
+gets the choice, even for the 3-5 agent Light mode.
 
 Route to matching section based on pair {A|B|C, 1|2|3}:
 - A → "## Variant A — Light" (below)
@@ -176,9 +176,9 @@ of each wave (same as a Claude subagent's return value).
 which are paid per call. A typical 20-agent Wave 1 hits each CLI
 ~4-5×; well below daily caps for all tested subscriptions in 2026-06.
 
-**Mode A (Light) is single-backend only** — overhead of multi-LLM
-plumbing exceeds the win at 3-5 agents total. Multi-LLM kicks in for
-Mode B and C.
+**Multi-LLM is available in every mode** (A / B / C). The wizard
+ALWAYS asks. Even Mode A's 3-5 agents benefit from cross-model
+diversity when the topic is contested.
 
 ---
 
