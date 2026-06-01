@@ -94,10 +94,23 @@ Options (pick ONE):
         {"label": "2 — Confirm branches only",             "description": "Auto discovery. Ask before verification + new branches."},
         {"label": "3 — Max autonomy",                      "description": "Self-approve via internal critique. Final report only."}
       ]
+    },
+    {
+      "question": "Backend distribution?",
+      "header": "Backends",
+      "multiSelect": false,
+      "options": [
+        {"label": "Claude only (default)",       "description": "Every agent on Claude. Lowest setup cost."},
+        {"label": "Multi-LLM (--backends=multi)", "description": "Distribute across installed CLIs (grok/kimi/copilot/agy). See ## Multi-LLM routing."}
+      ]
     }
   ]
 }
 ```
+
+Also accept `--backends=multi` as a direct CLI flag (skips the third
+prompt). Skip the prompt entirely on Mode A — multi-LLM not worth the
+plumbing for 3-5 agents.
 
 Route to matching section based on pair {A|B|C, 1|2|3}:
 - A → "## Variant A — Light" (below)
@@ -108,6 +121,64 @@ Control-level logic applies to ALL variants:
 - **L1** — before EVERY `TaskCreate` + agent spawn, invoke `AskUserQuestion` with options {Approve | Modify | Skip}
 - **L2** — auto-spawn discovery waves; `AskUserQuestion` ONLY before verification waves + new-branch spawns
 - **L3** — no user prompts; apply `kei-critic` teammate self-evaluation on each wave output before proceeding
+
+---
+
+## Multi-LLM routing (`--backends=multi`)
+
+By default every spawned agent runs on Claude (the orchestrator's own
+backend). With `--backends=multi` the lead distributes per-angle agents
+across whatever external CLI subscriptions are installed locally,
+amortising cost across providers and getting cross-model diversity (the
+v0.62 audit empirically showed different models surface different
+issues).
+
+**Default angle → backend mapping** (override via `--backend-<angle>=<cli>`):
+
+| Angle | Backend | Rationale |
+|---|---|---|
+| `web` | `claude` | Native `WebFetch` / `WebSearch` tools, no shell-out cost |
+| `critic` | `grok` | Independent reasoning trace from a different vendor |
+| `practical` | `kimi` | Cheap long-context for example mining |
+| `docs` | `copilot` | Long-context navigation, good for spec PDFs |
+| `academic` | `agy` | Gemini's RAG / citation strength |
+| `synthesis` (Wave 3) | `claude` | Orchestrator needs structured output for graph emission |
+
+**Discovery** — at Wave 1 start, the lead probes which CLIs are
+installed:
+
+```bash
+for b in claude grok kimi copilot agy; do
+  command -v "$b" >/dev/null 2>&1 && echo "$b ok"
+done
+```
+
+**Graceful degrade** — if a mapped backend is absent, that angle falls
+back to claude. The lead logs `wave1-{component}-{angle}.md` header
+with the actual backend that ran (truth-in-output).
+
+**Spawn invocation** — the lead emits one of two patterns per agent:
+
+```
+# Claude-side (Agent tool, in-process):
+Agent(subagent_type="researcher", prompt="<angle prompt>", ...)
+
+# External-CLI side (Bash run_in_background → kei agent):
+nohup kei agent --on=<backend> researcher "<angle prompt>" \
+     > /tmp/research/<topic>/wave1-<component>-<angle>.stdout \
+     2>/tmp/research/<topic>/wave1-<component>-<angle>.stderr &
+```
+
+The lead aggregates results by reading the `.stdout` files at the end
+of each wave (same as a Claude subagent's return value).
+
+**Cost note** — `kei limits` reports per-CLI usage. Watch grok / agy
+which are paid per call. A typical 20-agent Wave 1 hits each CLI
+~4-5×; well below daily caps for all tested subscriptions in 2026-06.
+
+**Mode A (Light) is single-backend only** — overhead of multi-LLM
+plumbing exceeds the win at 3-5 agents total. Multi-LLM kicks in for
+Mode B and C.
 
 ---
 
