@@ -47,8 +47,11 @@ check_path_binary() {
 
 check_optional_binary() {
   local name="$1" hint="$2"
-  [ -x "$TARGET_DIR/$name" ] && _pass "$name binary present" \
-    || _warn "$name binary not present" "$hint"
+  if [ -x "$TARGET_DIR/$name" ] || command -v "$name" >/dev/null 2>&1; then
+    _pass "$name binary present"
+  else
+    _warn "$name binary not present" "$hint"
+  fi
 }
 
 check_file_mode() {
@@ -96,7 +99,7 @@ check_ledger_schema() {
 [ "$QUIET" = "1" ] || printf '%skei-doctor%s — substrate health check\n' "$DIM" "$CL"
 
 _section "substrate binaries on PATH"
-for b in kei-fork kei-ledger kei-spawn kei-agent-runtime kei-capability kei-pet kei-shared; do
+for b in kei-fork kei-ledger kei-spawn kei-agent-runtime kei-capability kei-pet; do
   check_path_binary "$b"
 done
 
