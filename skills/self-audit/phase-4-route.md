@@ -40,6 +40,7 @@ Based on the click, append to `ROUTES` one of:
 
 Self-audit itself does not perform the handoff action — it emits the
 `/<slash-skill>` invocation as a suggested next step. The user runs it.
+For `codify`/`create hook`, first apply `codify-quality-gate.md` (RULE 0.14-Q).
 
 ## 4c — Severity gate
 

@@ -12,6 +12,15 @@ argument-hint: <optional session id; defaults to last session>
 - When a milestone commit fires the self-audit hook and findings need triage.
 - After an error spike (3+ errors in 20 tool calls) to understand the pattern before the next session.
 
+## When NOT to use
+
+- Inside a restricted-list / sensitive-IP project — run Phase 1 only,
+  then stop (see the Sensitive-IP exception in Rules).
+- Mid-task to "fix" a live bug — self-audit is retrospective triage, not
+  a repair tool; route active bugs to `/debug-deep` instead.
+- Expecting prompts when `<!-- session_count: N -->` < 10 — it will
+  (correctly) short-circuit to silent backlog logging, not ask.
+
 You are running the RULE 0.14 self-audit on the last (or named) session.
 You convert the session's trace into a short list of findings, classify
 each, present them as a multi-select click batch, and route each selection
@@ -89,12 +98,19 @@ Backlog:       <before_count> → <after_count> unprocessed items
   banned marker, run Phase 1 ONLY and stop: do not inject transcript
   excerpts back into chat.
 - **Constructor Pattern (RULE ZERO).** Every phase file ≤ 60 LOC.
+- **Codify quality gate (RULE 0.14-Q).** Any finding routed to `codify`
+  or `create hook` in Phase 4 MUST satisfy `codify-quality-gate.md`
+  (explicit when-NOT-to-apply clause + verification criterion +
+  severity-matched rigidity) before the `/escalate-recurrence` handoff
+  is emitted.
 
 ---
 
 ## References
 
 - `~/.claude/rules/session-self-audit.md` — RULE 0.14 full text
+- `codify-quality-gate.md` — RULE 0.14-Q gate for Phase-4 codify routes
+  (method adapted from Trail of Bits `skill-extractor` quality guide)
 - `~/.claude/skills/escalate-recurrence/SKILL.md` — codify route target
 - `skills/debug-deep/SKILL.md` — deep-dive route target
 - `_primitives/_rust/kei-memory/` — analyzer primitive
