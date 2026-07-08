@@ -4,7 +4,20 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.64.0 just shipped)
+- **GLM quota fail-fast + `kei glm-quota`** — when the Z.ai GLM Coding Plan
+  weekly/monthly cap is spent it returns HTTP 429 (code 1310), which the
+  `claude` binary treats as retryable and backs off on for ~180s before
+  failing with 0 tokens — so every `kei agent --on=glm` call hung (verified
+  2026-07-08: 8/8 ledger rows `is_error`, ~180–194s, 0 tokens). The glm path
+  in `scripts/kei-agent-cli.sh` now drops a marker (`~/.claude/.glm-quota-blocked`,
+  reset-epoch + human time) the first time a 429 is seen and fails subsequent
+  calls in <1ms — no network, **no extra prompt spent** (a per-call preflight
+  probe was rejected because it would double the prompt count against the same
+  per-window cap). The marker self-heals once the reset passes; bypass with
+  `KEI_GLM_IGNORE_QUOTA=1`. New `kei glm-quota` verb reports state offline
+  (free) or `--live` (one probe). Detection signatures verified against the
+  real Z.ai body *and* the `claude`-binary JSON. Smoke: fast-fail `exit 4` in
+  0.04s (was ~180s), self-heal, `glm-quota → BLOCKED`.
 
 ---
 

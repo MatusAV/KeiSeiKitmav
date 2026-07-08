@@ -109,6 +109,64 @@ resolve_backend() {
   printf 'claude\n'
 }
 
+# ---- GLM quota marker (fail-fast on Z.ai weekly/monthly 429) ---------------
+# Z.ai returns HTTP 429 code 1310 "Weekly/Monthly Limit Exhausted" when the GLM
+# Coding Plan quota is spent. The claude binary treats 429 as retryable and
+# backs off for ~180s before giving up (0 tokens, is_error) — so EVERY call
+# hangs. To avoid that, the first observed 429 drops a marker file holding the
+# reset time; later calls then fail in <1ms (no network, no extra prompt spent)
+# until the reset passes, at which point the marker self-heals. Verified cause
+# 2026-07-08: raw curl → 429/1310, launcher ledger → 8×~180s is_error.
+_glm_quota_marker() { printf '%s' "${KEI_GLM_QUOTA_MARKER:-$HOME/.claude/.glm-quota-blocked}"; }
+
+# Prints the human reset string + returns 0 if the marker exists and has not
+# expired; else clears a stale marker and returns 1.
+_glm_quota_blocked() {
+  local m; m=$(_glm_quota_marker)
+  [ -f "$m" ] || return 1
+  local reset_epoch reset_human now
+  reset_epoch=$(sed -n '1p' "$m" 2>/dev/null)
+  reset_human=$(sed -n '2p' "$m" 2>/dev/null)
+  now=$(date -u +%s)
+  if printf '%s' "$reset_epoch" | grep -qE '^[0-9]+$' && [ "$now" -lt "$reset_epoch" ]; then
+    printf '%s' "${reset_human:-unknown reset}"
+    return 0
+  fi
+  rm -f "$m" 2>/dev/null || true   # expired → self-heal
+  return 1
+}
+
+# Scans a failure payload ($1) for a rate-limit signature; if found, writes the
+# marker (with the reported reset time, or a short fallback window if Z.ai did
+# not report one) and returns 0. Returns 1 when the payload is not a 429.
+_glm_quota_mark_from() {
+  local payload="$1" m reset_human reset_epoch
+  # Signatures verified 2026-07-08 against real Z.ai body AND claude-binary JSON:
+  # raw body → "rate_limit_error"/'"code":"1310"'; binary → "[1310]…Limit
+  # Exhausted"/'"api_error_status":429'. A bare 429 with no reported reset falls
+  # back to a short block window (see below).
+  case "$payload" in
+    *rate_limit_error*|*"Limit Exhausted"*|*'"code":"1310"'*|*'[1310]'*|*'"api_error_status":429'*) : ;;
+    *) return 1 ;;
+  esac
+  m=$(_glm_quota_marker)
+  reset_human=$(printf '%s' "$payload" \
+    | grep -oE 'reset at [0-9]{4}-[0-9]{2}-[0-9]{2} [0-9]{2}:[0-9]{2}:[0-9]{2}' \
+    | head -1 | sed 's/^reset at //')
+  if [ -n "$reset_human" ]; then
+    reset_epoch=$(date -u -d "$reset_human" +%s 2>/dev/null || printf '')
+    reset_human="$reset_human UTC"
+  fi
+  if [ -z "${reset_epoch:-}" ]; then
+    local fb="${KEI_GLM_QUOTA_FALLBACK_SECS:-1800}"
+    reset_epoch=$(( $(date -u +%s) + fb ))
+    reset_human="~$(( fb / 60 ))min (Z.ai did not report a reset time)"
+  fi
+  printf '%s\n%s\n%s\n' "$reset_epoch" "$reset_human" \
+    "auto-marked $(date -u +%Y-%m-%dT%H:%M:%SZ) from Z.ai 429" > "$m" 2>/dev/null || true
+  return 0
+}
+
 # ---- backend invocation ---------------------------------------------------
 backend_invoke() {
   local backend="$1" prompt="$2" agent_name="${3:-}" bin
@@ -151,6 +209,18 @@ backend_invoke() {
         printf '  echo '\''ZAI_API_KEY=...'\'' >> %s && chmod 600 %s\n' "$KEI_SECRETS_FILE" "$KEI_SECRETS_FILE" >&2
         return 3
       fi
+      # Fail fast if a prior 429 marked the quota exhausted — no network call,
+      # no prompt spent. Bypass with KEI_GLM_IGNORE_QUOTA=1 to force a retry.
+      if [ "${KEI_GLM_IGNORE_QUOTA:-0}" != "1" ]; then
+        local _blocked_until
+        if _blocked_until=$(_glm_quota_blocked); then
+          printf '[kei-agent-cli] GLM quota exhausted — cheap routing unavailable until %s.\n' "$_blocked_until" >&2
+          printf '  (Z.ai HTTP 429, weekly/monthly cap.) Reroute this agent to Opus:\n' >&2
+          printf '    kei agent --on=claude %s "<task>"\n' "${agent_name:-<agent>}" >&2
+          printf '  Force a GLM retry anyway: KEI_GLM_IGNORE_QUOTA=1\n' >&2
+          return 4
+        fi
+      fi
       # Ledger mode (default on; disable with KEI_GLM_LEDGER=0). Runs the call
       # with --output-format=json to capture the REAL per-run token usage that
       # the Z.ai endpoint reports, appends it to the GLM ledger, then re-emits
@@ -169,6 +239,11 @@ backend_invoke() {
           "$bin" --strict-mcp-config $permissive_claude --output-format=json -p "$prompt")
         _rc=$?
         set -e
+        # Detect a Z.ai quota 429 in the output (JSON or raw) → mark for
+        # fast-fail so the next call doesn't burn another ~180s retry loop.
+        if _glm_quota_mark_from "$_out"; then
+          printf '[kei-agent-cli] Z.ai 429 (quota exhausted) — marked; further GLM calls fail fast until reset. Reroute: kei agent --on=claude %s\n' "${agent_name:-<agent>}" >&2
+        fi
         if printf '%s' "$_out" | jq -e . >/dev/null 2>&1; then
           local _ledger="${KEI_GLM_LEDGER_FILE:-$HOME/.claude/glm-ledger.jsonl}"
           mkdir -p "$(dirname "$_ledger")" 2>/dev/null || true
