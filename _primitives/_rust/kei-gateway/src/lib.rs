@@ -4,9 +4,9 @@
 //! Signal / Generic) → normalised [`MessageEvent`] → session-keyed agent run →
 //! response delivery via [`DeliveryRouter`].
 //!
-//! MVP scope: only the CLI adapter is fully implemented. Telegram / Discord /
-//! Slack adapters are feature-gated stubs (Hermes-equivalent surface, todo!()
-//! bodies). Full impls land in P4.1.b.
+//! Telegram / Discord / Slack adapters are feature-gated (real teloxide /
+//! serenity / slack-morphism implementations, not stubs) so the default build
+//! stays lean. WhatsApp / Signal remain unimplemented — no crate wired yet.
 
 #![forbid(unsafe_code)]
 #![deny(unused_must_use)]

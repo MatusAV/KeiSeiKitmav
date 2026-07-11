@@ -8,21 +8,49 @@ use anyhow::Result;
 use tokio::sync::mpsc;
 
 use crate::adapters::base::OutboundMessage;
-use crate::agent_cache::AgentCache;
+use crate::agent_cache::{AgentCache, CachedAgent};
 use crate::guard::SessionGuard;
 use crate::message::MessageEvent;
 use crate::router::{DeliveryRouter, DeliveryTarget};
 use crate::session_key::{build_session_key, SessionKeyOpts};
 use crate::session_store::SessionStore;
 
+/// Outcome of one [`AgentRunFn::run`] call.
+pub struct AgentRunOutcome {
+    /// Outbound text. Empty string means "[SILENT] — no delivery".
+    pub text: String,
+    /// Warm handle to keep in the [`AgentCache`] for the next turn on this
+    /// session, paired with a config signature used to detect staleness.
+    /// `None` skips caching (e.g. one-shot / stateless implementations).
+    pub warm: Option<(Arc<dyn std::any::Any + Send + Sync>, String)>,
+}
+
+impl AgentRunOutcome {
+    /// Convenience constructor for implementations that don't cache.
+    pub fn text_only(text: impl Into<String>) -> Self {
+        Self {
+            text: text.into(),
+            warm: None,
+        }
+    }
+}
+
 /// Type-erased agent runner.
 ///
 /// Real impl supplies `Arc<dyn AgentRunFn>`; the gateway only sees the trait.
 #[async_trait::async_trait]
 pub trait AgentRunFn: Send + Sync {
-    /// Process an inbound event and return the agent's outbound text. Empty
-    /// string means "[SILENT] — no delivery".
-    async fn run(&self, session_key: &str, event: &MessageEvent) -> Result<String>;
+    /// Process an inbound event and return the agent's outbound text plus an
+    /// optional warm handle to cache. `cached` is the previous turn's warm
+    /// handle for this session (via [`AgentCache`]), if still fresh — the
+    /// implementation downcasts it through `Any` to reuse a live process
+    /// instead of cold-starting.
+    async fn run(
+        &self,
+        session_key: &str,
+        event: &MessageEvent,
+        cached: Option<Arc<dyn std::any::Any + Send + Sync>>,
+    ) -> Result<AgentRunOutcome>;
 }
 
 /// Configuration for [`GatewayRunner`].
@@ -86,13 +114,21 @@ impl GatewayRunner {
             .sessions
             .get_or_create(&key, || format!("session_{}", chrono::Utc::now().timestamp()))
             .await?;
-        let response = self.agent_runner.run(&key, &event).await?;
+        let cached = self.agent_cache.get(&key).await;
+        let outcome = self.agent_runner.run(&key, &event, cached).await?;
+        if let Some((handle, signature)) = outcome.warm {
+            self.agent_cache
+                .put(&key, CachedAgent::new(handle, signature))
+                .await;
+        }
         self.sessions.record_turn(&key).await?;
-        if response.is_empty() {
+        if outcome.text.is_empty() {
             return Ok(());
         }
         let target = origin_target(&event, &key);
-        self.router.deliver(target, OutboundMessage::text(response)).await?;
+        self.router
+            .deliver(target, OutboundMessage::text(outcome.text))
+            .await?;
         Ok(())
     }
 
@@ -127,5 +163,117 @@ fn origin_target(event: &MessageEvent, fallback_key: &str) -> DeliveryTarget {
             .clone()
             .unwrap_or_else(|| fallback_key.to_string()),
         thread_id: event.source.thread_id.clone(),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::sync::atomic::{AtomicUsize, Ordering};
+    use std::time::Duration;
+
+    use super::*;
+    use crate::message::{Platform, SessionSource};
+
+    /// Records whether each `run` call was handed a warm cache hit, and
+    /// always offers a new warm handle back.
+    struct CountingAgent {
+        calls: AtomicUsize,
+        cache_hits: AtomicUsize,
+    }
+
+    #[async_trait::async_trait]
+    impl AgentRunFn for CountingAgent {
+        async fn run(
+            &self,
+            _session_key: &str,
+            _event: &MessageEvent,
+            cached: Option<Arc<dyn std::any::Any + Send + Sync>>,
+        ) -> Result<AgentRunOutcome> {
+            self.calls.fetch_add(1, Ordering::SeqCst);
+            if cached.is_some() {
+                self.cache_hits.fetch_add(1, Ordering::SeqCst);
+            }
+            Ok(AgentRunOutcome {
+                text: String::new(),
+                warm: Some((
+                    Arc::new(()) as Arc<dyn std::any::Any + Send + Sync>,
+                    "sig-v1".into(),
+                )),
+            })
+        }
+    }
+
+    async fn build_runner(agent: Arc<CountingAgent>) -> GatewayRunner {
+        // `:memory:` gives each pooled connection its own DB, so the schema
+        // created on connection 1 is invisible to connection 2. A tempfile
+        // keeps the pool's `max_connections(8)` pointed at one real DB.
+        let dir = tempfile::tempdir().unwrap();
+        let db_path = dir.path().join("sessions.sqlite3");
+        let sessions = SessionStore::open(db_path.to_str().unwrap(), 16)
+            .await
+            .unwrap();
+        std::mem::forget(dir);
+        GatewayRunner::new(
+            RunnerConfig::default(),
+            SessionGuard::new(),
+            AgentCache::new(16, Duration::from_secs(60)),
+            sessions,
+            DeliveryRouter::new(),
+            agent,
+        )
+    }
+
+    #[tokio::test]
+    async fn second_turn_on_same_session_hits_the_warm_cache() {
+        let agent = Arc::new(CountingAgent {
+            calls: AtomicUsize::new(0),
+            cache_hits: AtomicUsize::new(0),
+        });
+        let runner = build_runner(agent.clone()).await;
+        let source = SessionSource::dm(Platform::Telegram, "42");
+
+        runner
+            .handle_inbound(MessageEvent::new("hi", source.clone()))
+            .await
+            .unwrap();
+        runner
+            .handle_inbound(MessageEvent::new("again", source))
+            .await
+            .unwrap();
+
+        assert_eq!(agent.calls.load(Ordering::SeqCst), 2);
+        assert_eq!(
+            agent.cache_hits.load(Ordering::SeqCst),
+            1,
+            "first turn is a cold start, second turn must see the cached handle"
+        );
+        assert_eq!(runner.agent_cache.len().await, 1);
+    }
+
+    #[tokio::test]
+    async fn distinct_sessions_do_not_share_the_cache() {
+        let agent = Arc::new(CountingAgent {
+            calls: AtomicUsize::new(0),
+            cache_hits: AtomicUsize::new(0),
+        });
+        let runner = build_runner(agent.clone()).await;
+
+        runner
+            .handle_inbound(MessageEvent::new(
+                "hi",
+                SessionSource::dm(Platform::Telegram, "1"),
+            ))
+            .await
+            .unwrap();
+        runner
+            .handle_inbound(MessageEvent::new(
+                "hi",
+                SessionSource::dm(Platform::Telegram, "2"),
+            ))
+            .await
+            .unwrap();
+
+        assert_eq!(agent.cache_hits.load(Ordering::SeqCst), 0);
+        assert_eq!(runner.agent_cache.len().await, 2);
     }
 }

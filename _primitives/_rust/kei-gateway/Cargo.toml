@@ -9,15 +9,15 @@ license.workspace = true
 
 # Feature flags
 #   default      — pulls in the always-on CLI adapter
-#   telegram     — teloxide-based Telegram adapter (STUB scaffolded, full impl P4.1.b)
-#   discord      — serenity-based Discord adapter (STUB scaffolded, full impl P4.1.b)
-#   slack        — slack-morphism-based Slack adapter (STUB scaffolded, full impl P4.1.b)
-#   cli          — stdin/stdout adapter (only adapter actually wired in MVP)
+#   telegram     — teloxide-based Telegram adapter (real impl: long-poll, send, dedup)
+#   discord      — serenity-based Discord adapter (real impl: gateway events, send, dedup)
+#   slack        — slack-morphism-based Slack adapter (real impl: Socket Mode, send, dedup)
+#   cli          — stdin/stdout adapter
 #   all-platforms — convenience to enable every adapter together
 #
-# MVP (this crate landing) ships ONLY `cli` working. tg/discord/slack are
-# feature-gated stubs with todo!() bodies. They compile under their feature
-# flag but panic at runtime — full implementations land in P4.1.b.
+# All feature-gated adapters are real implementations (not stubs) — gated
+# purely to keep the default build lean (each pulls a distinct SDK + TLS
+# stack). WhatsApp / Signal are unimplemented — no adapter crate exists yet.
 
 [features]
 default = ["cli"]

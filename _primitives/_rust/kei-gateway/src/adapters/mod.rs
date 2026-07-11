@@ -1,7 +1,8 @@
 //! Platform adapters (per-protocol I/O).
 //!
-//! `base` defines the [`PlatformAdapter`] trait. Concrete adapters are
-//! feature-gated; only `cli` is fully implemented in MVP.
+//! `base` defines the [`PlatformAdapter`] trait. `telegram` / `discord` /
+//! `slack` are real implementations behind feature gates (see crate
+//! `Cargo.toml`); `cli` is always on.
 
 pub mod base;
 

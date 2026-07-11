@@ -22,8 +22,8 @@
 | P2.2 memory-nudge | **25%** | **dead-code** | PASS | Zero callers in handlers; `Invoker` trait has no production impl; `MemoryStore` Arc not plumbed; `from_context` returns invoker=None → `spawn_review` early-returns |
 | P3.1 kei-skills | 30% | dead-code | PASS | Zero downstream consumers; kei-mcp re-implements skills-as-MCP via raw walkdir, bypassing kei-skills entirely |
 | P3.4 kei-ledger v8 | 80% | partial-write-only | PASS | Real SQL + 5 funcs + 6 tests; no caller until Phase D nightly job built |
-| P4.1 kei-gateway | 40% | scaffolding | PASS | 9 `todo!()` panics in TG/Discord/Slack adapters; only CLI real; `agent_cache` field DEAD in runner; blake3 hash unused in production path |
-| P4.2 kei-cron-scheduler | **85%** | **functional** | PASS | Parser+job+runner real, no stubs. Minor: 4 `matches!` no-op tests need `assert!`; 3 scheduling abstractions in kit (smell) |
+| P4.1 kei-gateway | **90%** | **functional** (2026-07-11 re-audit) | PASS (50 tests) | TG/Discord/Slack adapters are real (teloxide/serenity/slack-morphism), not stubs — doc comments were stale, now corrected. `agent_cache` wired into `handle_inbound` (was dead code; `AgentRunFn::run` now takes/returns a warm handle, covered by 2 new tests). Remaining gap: no binary/consumer wires `GatewayRunner` yet; WhatsApp/Signal adapters unimplemented (deferred per plan) |
+| P4.2 kei-cron-scheduler | **95%** | **functional** (2026-07-11 re-audit) | PASS (38 tests, was FAILING) | Parser+job+runner real, no stubs. Fixed real regression: `chrono` workspace dep was missing the `serde` feature, so the crate didn't compile (`cargo test` failed, banner's "PASS" was stale). `matches!`/`assert!` issue already resolved. Remaining: 3 scheduling abstractions in kit (smell, not a blocker) |
 
 **Hermes "no auto-extraction" claim re-verified [E1 source code]**: no edits required to README footnote or §"Honest delta vs Hermes". Verification by exhaustive grep of `/tmp/hermes-research/hermes-agent/` for `extract_skill`, `auto_save_skill`, post-task hooks, plus inspection of sister `NousResearch/hermes-agent-self-evolution` (DSPy+GEPA prompt optimization, NOT trajectory→skill extraction; separate repo, no integration).
 
@@ -35,7 +35,8 @@
 - P2.2.b: implement `Invoker` for `kei-anthropic` + plumb `MemoryStore` Arc + call `maybe_trigger` from chat handler (~1d)
 - P3.1.b: replace kei-mcp's raw walkdir with `kei_skills::SkillRegistry` consumer (~3-4h)
 - P0.2.b: parse chatlog into multi-turn ShareGPT (split on tool boundaries, emit `From::Tool`) (~1d)
-- P4.1.b: real teloxide / serenity / slack-morphism adapter implementations (3-4d each)
+- ~~P4.1.b: real teloxide / serenity / slack-morphism adapter implementations~~ **DONE** (2026-07-11 re-audit — all three were already real, docs were stale)
+- P4.1.c: wire a real `AgentRunFn` consumer (e.g. `kei-cortex`) + a `kei-gateway` binary — the crate is fully testable but nothing instantiates `GatewayRunner` outside its own tests yet
 
 ---
 
