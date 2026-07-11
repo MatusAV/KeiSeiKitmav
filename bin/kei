@@ -192,8 +192,17 @@ agent_count() {
 # Substrate version — read from installed plugin.json (or fallback).
 # Single SSoT: plugin.json. Don't hardcode in splash again.
 substrate_version() {
-  local pj
-  for pj in "$HOME/.claude/plugin.json" "$HOME/.local/share/keisei/plugin.json"; do
+  local pj src dir
+  # Resolve this script's real dir (follow symlinks) so an in-repo run
+  # (bin/kei) finds the checkout's own plugin.json without an install copy.
+  src="${BASH_SOURCE[0]}"
+  while [ -h "$src" ]; do
+    dir=$(cd -P "$(dirname "$src")" && pwd)
+    src=$(readlink "$src")
+    [ "${src#/}" = "$src" ] && src="$dir/$src"
+  done
+  dir=$(cd -P "$(dirname "$src")" && pwd)
+  for pj in "$HOME/.claude/plugin.json" "$HOME/.local/share/keisei/plugin.json" "$dir/../plugin.json"; do
     if [ -f "$pj" ]; then
       sed -n 's/.*"version": *"\([^"]*\)".*/\1/p' "$pj" | head -1
       return
