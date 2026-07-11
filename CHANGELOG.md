@@ -4,6 +4,21 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
+(none — v0.64.1 just shipped)
+
+---
+
+## v0.64.1 — 2026-07-11
+
+Splash version resolves correctly for in-repo runs; the accumulated
+GLM-quota fail-fast work (previously Unreleased) ships in this cut.
+
+- **in-repo substrate version resolution** — `substrate_version()` in `bin/kei`
+  only searched `~/.claude/plugin.json` and `~/.local/share/keisei/plugin.json`,
+  so an in-repo run (or an install without a copied `plugin.json`) fell through
+  to `vunknown` in the splash. It now resolves the script's own dir (following
+  symlinks) and adds `<dir>/../plugin.json` to the search list, keeping
+  `plugin.json` the single SSoT.
 - **GLM quota fail-fast + `kei glm-quota`** — when the Z.ai GLM Coding Plan
   weekly/monthly cap is spent it returns HTTP 429 (code 1310), which the
   `claude` binary treats as retryable and backs off on for ~180s before
