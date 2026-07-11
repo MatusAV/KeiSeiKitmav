@@ -4,6 +4,15 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
+(none — v0.64.2 just shipped)
+
+---
+
+## v0.64.2 — 2026-07-11
+
+Documentation-only cut clarifying how the v0.64.1 splash fix reaches installed
+setups.
+
 - **docs: `~/.claude/bin/kei` is a symlink to the checkout** — clarifies why the
   v0.64.1 substrate-version fix also covers installed setups. `install.sh` symlinks
   `~/.claude/bin/kei -> <checkout>/bin/kei`, so `substrate_version()` follows the
