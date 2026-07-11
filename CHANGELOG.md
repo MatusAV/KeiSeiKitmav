@@ -4,7 +4,13 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.64.1 just shipped)
+- **docs: `~/.claude/bin/kei` is a symlink to the checkout** — clarifies why the
+  v0.64.1 substrate-version fix also covers installed setups. `install.sh` symlinks
+  `~/.claude/bin/kei -> <checkout>/bin/kei`, so `substrate_version()` follows the
+  symlink to the repo's `bin/` and its `<dir>/../plugin.json` fallback resolves to
+  the checkout's `plugin.json`. The splash shows the right version even when
+  `~/.claude/plugin.json` is absent — which matters because the installer never
+  manages that copy (it must be placed by hand).
 
 ---
 
