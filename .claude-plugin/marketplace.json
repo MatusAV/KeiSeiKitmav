@@ -1,12 +1,14 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
   "name": "keisei-marketplace",
   "owner": {
-    "name": "Denis Parfionovich",
-    "url": "https://github.com/KeiSeiLab"
+    "name": "KeiSei LLC",
+    "email": "hello@keilab.io",
+    "url": "https://keilab.io"
   },
   "metadata": {
     "description": "KeiSei Constructor-Pattern kits and primitives for Claude Code",
-    "version": "0.38.0"
+    "version": "0.64.0"
   },
   "plugins": [
     {
