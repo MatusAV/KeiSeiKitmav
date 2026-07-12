@@ -3,7 +3,7 @@ name = "kei-search-core"
 version = "0.1.0"
 edition.workspace = true
 rust-version.workspace = true
-description = "3-wave deep research scaffolding with budget cap. Port of LBM internal/search (fetch stubbed)."
+description = "3-wave deep research engine with budget cap. Port of LBM internal/search; live fetch via the Anthropic web-search tool (opt-in: ANTHROPIC_API_KEY), else a no-op stub."
 authors.workspace = true
 license.workspace = true
 
@@ -22,6 +22,9 @@ serde = { workspace = true }
 serde_json = { workspace = true }
 anyhow = { workspace = true }
 chrono = { workspace = true }
+# blocking client for the synchronous SourceFetcher; reqwest is already a
+# workspace dep — this only unions in the `blocking` feature.
+reqwest = { workspace = true, features = ["blocking"] }
 
 [dev-dependencies]
 tempfile = { workspace = true }

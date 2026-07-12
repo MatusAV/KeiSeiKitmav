@@ -4,7 +4,7 @@ use clap::{Parser, Subcommand, ValueEnum};
 use kei_search_core::export::{export, Format};
 use kei_search_core::fetch::StubFetcher;
 use kei_search_core::pipeline::run_research;
-use kei_search_core::ResearchStore;
+use kei_search_core::{AnthropicFetcher, ResearchStore};
 use std::path::PathBuf;
 use std::process::ExitCode;
 
@@ -38,7 +38,17 @@ fn run() -> anyhow::Result<()> {
     let s = ResearchStore::open(&db_path(cli.db))?;
     match cli.cmd {
         Cmd::Run { prompt, budget } => {
-            let id = run_research(&s, &StubFetcher, &prompt, budget)?;
+            // Live Anthropic web-search when ANTHROPIC_API_KEY is set; else the
+            // no-op stub (keeps `run` working offline / without a key).
+            let id = match AnthropicFetcher::from_env() {
+                Some(fetcher) => run_research(&s, &fetcher, &prompt, budget)?,
+                None => {
+                    eprintln!(
+                        "kei-search-core: ANTHROPIC_API_KEY unset — using stub fetcher (no sources)"
+                    );
+                    run_research(&s, &StubFetcher, &prompt, budget)?
+                }
+            };
             println!("{}", id);
         }
         Cmd::Stop { id } => {

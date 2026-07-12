@@ -4,12 +4,12 @@
 //! `/research` runs inside Claude Code and uses the built-in WebFetch /
 //! WebSearch tools + parallel Agent spawns; it's fully functional today.
 //!
-//! `kei-search-core` is a separate scaffold for FUTURE Rust-side automation
-//! that needs programmatic web search (e.g. nightly knowledge consolidation
-//! without a Claude session). Real providers plug into this trait
-//! (anthropic-websearch, SerpAPI, Brave Search API, ...). StubFetcher
-//! exists so `cargo build --workspace` stays green while the rest of the
-//! crate is being designed.
+//! `kei-search-core` is a separate scaffold for Rust-side automation that
+//! needs programmatic web search (e.g. nightly knowledge consolidation
+//! without a Claude session). The live provider is
+//! [`AnthropicFetcher`](crate::fetch_anthropic::AnthropicFetcher) (Anthropic
+//! web-search tool; opt-in on `ANTHROPIC_API_KEY`); `StubFetcher` is the
+//! no-op fallback when no key is configured.
 
 use crate::types::Source;
 
@@ -20,16 +20,13 @@ pub trait SourceFetcher {
     fn fetch(&self, claim: &str) -> (Vec<Source>, i64);
 }
 
-/// Default stub — returns empty. Frozen interface, no runtime side-effects.
+/// No-op fallback — returns empty, no runtime side-effects. Used when
+/// `ANTHROPIC_API_KEY` is unset so the pipeline still runs offline. The live
+/// path is [`AnthropicFetcher`](crate::fetch_anthropic::AnthropicFetcher).
 pub struct StubFetcher;
 
 impl SourceFetcher for StubFetcher {
     fn fetch(&self, _claim: &str) -> (Vec<Source>, i64) {
-        // Deliberate no-op: this crate ships the frozen `SourceFetcher`
-        // interface + research pipeline, but no live web provider is wired
-        // yet (see module docs — `/research` uses Claude Code's built-in
-        // WebFetch/WebSearch and does NOT depend on this crate). Real
-        // providers (anthropic-websearch / SerpAPI / Brave) plug in here.
         (Vec::new(), 0)
     }
 }
