@@ -24,6 +24,10 @@ pub struct TraitMeta {
 }
 
 /// Return the static trait metadata for `kind`.
+// INVARIANT: TRAIT_TABLE currently has exactly one entry per TraitKind
+// variant (verified by hand: 12 variants, 12 entries). Not compiler-checked
+// — if you add a TraitKind variant, add a matching TRAIT_TABLE entry too.
+#[allow(clippy::expect_used)]
 pub fn trait_meta(kind: TraitKind) -> &'static TraitMeta {
     TRAIT_TABLE.iter().find(|m| m.kind == kind)
         .expect("every TraitKind has a static entry in skeleton_table")

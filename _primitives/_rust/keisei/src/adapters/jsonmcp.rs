@@ -52,6 +52,9 @@ pub fn build_mcp_entry(brain: &Brain) -> Result<Value> {
 /// already exists with different content, returns `Error::NameConflict`
 /// with `existing_client = client_label` so the user sees which adapter
 /// is guarding the collision.
+// `.expect()` calls below are each immediately preceded by a guard that
+// coerces the value into the expected shape, so they can't fail.
+#[allow(clippy::expect_used)]
 pub fn upsert_under_key(
     doc: &mut Value,
     outer_key: &str,
@@ -84,6 +87,8 @@ pub fn upsert_under_key(
 
 /// Remove `doc[outer_key][entry_key]` and prune `outer_key` when it's
 /// left empty. Returns whether anything was removed.
+// Guarded by the early return above — `doc` is provably an object here.
+#[allow(clippy::expect_used)]
 pub fn remove_under_key(doc: &mut Value, outer_key: &str, entry_key: &str) -> bool {
     if !doc.is_object() {
         return false;

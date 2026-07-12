@@ -48,6 +48,10 @@ impl SqlitePingStore {
 }
 
 #[async_trait::async_trait]
+// `.expect("ping mutex")` calls below only panic on mutex poisoning (a
+// prior holder panicked while locked) — propagating that is the safer
+// default for this in-memory/sqlite heartbeat store.
+#[allow(clippy::expect_used)]
 impl PingStore for SqlitePingStore {
     fn kind(&self) -> BackendKind {
         BackendKind::Sqlite

@@ -66,6 +66,9 @@ impl AppState {
     /// Construct new state from a validated config and bearer token.
     /// The LLM router is built from environment (`ANTHROPIC_API_KEY` etc.)
     /// at construction time — providers without keys are silently skipped.
+    // `PER_USER_LOCK_CAP` is a nonzero compile-time constant, so this can
+    // never be `None`.
+    #[allow(clippy::expect_used)]
     pub fn new(config: AppConfig, token: String) -> Self {
         let router = Arc::new(LlmRouter::from_env());
         Self::with_router(config, token, router)
@@ -99,6 +102,9 @@ impl AppState {
     /// directly (e.g. an in-memory store). Lets the integration test
     /// drive an end-to-end chat turn against a counted-event tracker
     /// without writing a real SQLite file.
+    // `PER_USER_LOCK_CAP` is a nonzero compile-time constant, so this can
+    // never be `None`.
+    #[allow(clippy::expect_used)]
     pub fn with_router_factory_and_tracker(
         config: AppConfig,
         token: String,

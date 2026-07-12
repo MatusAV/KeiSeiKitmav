@@ -163,6 +163,10 @@ fn basename_cstring(dest: &Path) -> Result<CString, AppError> {
 }
 
 /// Build a unique temp basename `<dest>.<nanos>.tmp`.
+// `basename` is already a validated `CString` (NUL-free by construction),
+// and the appended suffix is only digits/'.'/"tmp" — the result can never
+// contain an interior NUL, so `CString::new` here can't fail.
+#[allow(clippy::expect_used)]
 fn make_tmp_name(basename: &CString) -> CString {
     let ts = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)

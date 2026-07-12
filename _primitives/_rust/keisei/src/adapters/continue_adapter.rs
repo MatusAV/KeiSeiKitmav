@@ -161,6 +161,9 @@ fn build_entry(brain: &Brain) -> Result<Value> {
     }))
 }
 
+// `.expect()` calls below are each immediately preceded by a guard that
+// coerces the value into the expected shape, so they can't fail.
+#[allow(clippy::expect_used)]
 fn merge_entry(doc: &mut Value, brain: &Brain) -> Result<()> {
     if !doc.is_object() {
         *doc = json!({});
@@ -190,6 +193,8 @@ fn merge_entry(doc: &mut Value, brain: &Brain) -> Result<()> {
     Ok(())
 }
 
+// Guarded by the early return above — `doc` is provably an object here.
+#[allow(clippy::expect_used)]
 fn remove_entry(doc: &mut Value) {
     if !doc.is_object() {
         return;

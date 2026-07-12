@@ -45,6 +45,10 @@ fn skip_dir(path: &Path) -> bool {
     should_skip_path(path)
 }
 
+// `pattern` is always one of the two hardcoded regex literals below (or the
+// function returns early) — a syntax error would fail every test run, so
+// `.expect()` is not a real risk site.
+#[allow(clippy::expect_used)]
 fn long_fns(content: &str, ext: &str) -> Vec<(String, usize)> {
     let pattern = match ext {
         "rs" => r"(?m)^\s*(?:pub\s+)?(?:async\s+)?fn\s+([a-zA-Z0-9_]+)",

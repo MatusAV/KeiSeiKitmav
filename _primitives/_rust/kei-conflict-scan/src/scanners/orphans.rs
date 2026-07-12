@@ -32,6 +32,9 @@ fn all_basenames(root: &Path) -> HashSet<String> {
     out
 }
 
+// Hardcoded regex literal: a syntax error would fail every test run, not
+// just an edge case, so `.expect()` is not a real risk site.
+#[allow(clippy::expect_used)]
 fn extract_wikilinks(content: &str) -> Vec<String> {
     let rx = Regex::new(r"\[\[([^\]\|#]+?)(?:#[^\]]*)?(?:\|[^\]]*)?\]\]").expect("static regex");
     rx.captures_iter(content)

@@ -46,6 +46,11 @@ type KillHandle = Arc<Mutex<Option<Child>>>;
 /// trips its cap, that reader kills the child IMMEDIATELY (from inside
 /// the reader thread) so an unbounded writer cannot deadlock us. The
 /// other reader then sees the pipe close and returns. Finally we reap.
+// `pub(crate)` with a single caller (invoke.rs), which always spawns via
+// `.stdout(Stdio::piped()).stderr(Stdio::piped())` — `.take()` can't be
+// `None`. The `.join()` calls below propagate a reader-thread panic rather
+// than silently swallowing it, which is the intended behavior.
+#[allow(clippy::expect_used)]
 pub(crate) fn capture_with_cap(mut child: Child) -> std::io::Result<Captured> {
     let stdout = child.stdout.take().expect("stdout piped");
     let stderr = child.stderr.take().expect("stderr piped");
@@ -66,6 +71,8 @@ pub(crate) fn capture_with_cap(mut child: Child) -> std::io::Result<Captured> {
 /// Reap the child (waiting on it) and return its exit code. If a reader
 /// already killed the child the lock will hold `None` — fall through to
 /// -1 (signaled). Otherwise we still call `wait()` to avoid a zombie.
+// `.expect("kill mutex")` only panics on mutex poisoning.
+#[allow(clippy::expect_used)]
 fn reap_child(kill: &KillHandle) -> i32 {
     let mut guard = kill.lock().expect("kill mutex");
     if let Some(mut c) = guard.take() {

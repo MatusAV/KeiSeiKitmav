@@ -89,6 +89,9 @@ pub struct MockRunner {
     pub calls: std::sync::Mutex<Vec<(String, Vec<String>)>>,
 }
 
+// `.expect("mock calls lock")` below only panics on mutex poisoning (a
+// prior holder panicked while locked) — this is test-only mock state.
+#[allow(clippy::expect_used)]
 impl MockRunner {
     pub fn new() -> Self {
         Self { overrides: HashMap::new(), calls: std::sync::Mutex::new(Vec::new()) }
@@ -121,6 +124,9 @@ impl Default for MockRunner {
     }
 }
 
+// `.expect("mock calls lock")` below only panics on mutex poisoning — this
+// is test-only mock state.
+#[allow(clippy::expect_used)]
 impl Runner for MockRunner {
     fn run(&self, cmd: &str, args: &[&str]) -> Result<RunOutput> {
         {

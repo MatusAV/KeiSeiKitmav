@@ -45,6 +45,7 @@ impl SqliteStore {
 
     /// Borrow the connection mutex. Backend uses this from inside
     /// `spawn_blocking` so the blocking lock is off the async runtime.
+    #[allow(clippy::expect_used)]
     pub fn lock(&self) -> std::sync::MutexGuard<'_, Connection> {
         // Mutex poisoning aborts here on purpose: a panic mid-transaction
         // means the in-memory state is suspect.

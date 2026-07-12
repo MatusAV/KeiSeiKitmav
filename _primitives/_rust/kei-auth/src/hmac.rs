@@ -8,6 +8,9 @@ use sha2::Sha256;
 type H = Hmac<Sha256>;
 
 /// Sign `body` with `key`. Returns URL-safe base64 MAC.
+// HMAC accepts keys of any length per RFC 2104 (short keys are zero-padded,
+// long keys are hashed down) — `new_from_slice` can't fail here.
+#[allow(clippy::expect_used)]
 pub fn sign(key: &[u8], body: &[u8]) -> String {
     let mut mac = <H as Mac>::new_from_slice(key).expect("HMAC accepts any key size");
     mac.update(body);
@@ -15,6 +18,7 @@ pub fn sign(key: &[u8], body: &[u8]) -> String {
 }
 
 /// Verify `body` against MAC. Returns Err if mismatch.
+#[allow(clippy::expect_used)]
 pub fn verify(key: &[u8], body: &[u8], mac_b64: &str) -> Result<()> {
     let mut mac = <H as Mac>::new_from_slice(key).expect("HMAC accepts any key size");
     mac.update(body);

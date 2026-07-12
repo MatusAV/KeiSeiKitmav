@@ -83,6 +83,9 @@ fn check_no_traversal_bytes(raw: &str) -> Result<(), InvalidAgentId> {
     Ok(())
 }
 
+// Only called from `validate_agent_id`, after `check_basic_shape` has
+// already rejected an empty `raw` — `.next()` here can't be `None`.
+#[allow(clippy::expect_used)]
 fn check_character_class(raw: &str) -> Result<(), InvalidAgentId> {
     let first = raw.chars().next().expect("non-empty checked earlier");
     if !first.is_ascii_alphanumeric() {

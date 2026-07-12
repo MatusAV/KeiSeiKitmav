@@ -10,6 +10,9 @@ use crate::error::BuddyError;
 use crate::state::OnboardState;
 
 /// Unix epoch seconds.
+// `duration_since(UNIX_EPOCH)` only errs if the system clock is set before
+// 1970 — a misconfigured-system scenario, not a real risk site.
+#[allow(clippy::expect_used)]
 pub(crate) fn now_epoch() -> i64 {
     std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)

@@ -42,6 +42,10 @@ impl Watcher {
     /// Begin watching `path`. When `recursive=true`, all descendants
     /// are watched too; otherwise only the path itself (and its
     /// immediate children if a directory).
+    // `inner` is only ever taken (set to `None`) inside `Drop::drop`, after
+    // which the object is gone and these methods can't be called — so
+    // `inner` is always `Some` here.
+    #[allow(clippy::expect_used)]
     pub fn watch(&mut self, path: &Path, recursive: bool) -> Result<(), WatchError> {
         let mode = if recursive {
             RecursiveMode::Recursive
@@ -53,6 +57,7 @@ impl Watcher {
     }
 
     /// Stop watching `path`.
+    #[allow(clippy::expect_used)]
     pub fn unwatch(&mut self, path: &Path) -> Result<(), WatchError> {
         let inner = self.inner.as_mut().expect("watcher initialised");
         inner.unwatch(path).map_err(from_notify)

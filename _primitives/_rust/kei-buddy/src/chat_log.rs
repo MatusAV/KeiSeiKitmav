@@ -30,6 +30,10 @@ pub struct ChatLog {
     sessions: Mutex<HashMap<i64, String>>,
 }
 
+// `.expect("... mutex poisoned")` calls below only panic if a prior lock
+// holder panicked while holding the lock — propagating that poison panic
+// is the safer default for this in-memory/sqlite session cache.
+#[allow(clippy::expect_used)]
 impl ChatLog {
     /// Open (or create) a file-backed store at `path`.
     pub fn from_path(path: impl AsRef<Path>) -> Result<Self, BuddyError> {

@@ -29,8 +29,9 @@ impl Dna {
     }
 
     /// Re-parse into `ParsedDna` view (cheap; the wire format is the SSoT).
+    // Safe: we only construct `Dna` via parse, so re-parse cannot fail.
+    #[allow(clippy::expect_used)]
     pub fn parsed(&self) -> ParsedDna {
-        // Safe: we only construct `Dna` via parse, so re-parse cannot fail.
         parse_dna(&self.0).expect("Dna invariant: always parseable")
     }
 

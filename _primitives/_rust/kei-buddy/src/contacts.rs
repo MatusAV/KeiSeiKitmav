@@ -22,6 +22,10 @@ pub struct Contacts {
     store: Arc<Mutex<Store>>,
 }
 
+// `.expect("store mutex poisoned")` calls below only panic if a prior lock
+// holder panicked while holding the lock — propagating that poison panic
+// is the safer default for this in-memory/sqlite contacts store.
+#[allow(clippy::expect_used)]
 impl Contacts {
     /// Open a file-backed contact store at `path`.
     pub fn from_path(path: impl AsRef<Path>) -> Result<Self, BuddyError> {

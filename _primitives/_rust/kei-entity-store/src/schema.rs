@@ -138,6 +138,7 @@ pub struct EntitySchema {
 impl EntitySchema {
     /// Returns the PK column (integer or text). Panics if the schema
     /// has no PK — schema authors must declare exactly one.
+    #[allow(clippy::expect_used)]
     pub fn pk(&self) -> &FieldDef {
         self.fields
             .iter()

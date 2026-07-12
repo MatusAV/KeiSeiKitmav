@@ -11,6 +11,9 @@ use regex::Regex;
 use std::path::{Path, PathBuf};
 use std::sync::OnceLock;
 
+// Hardcoded regex literal: a syntax error would fail every test run, not
+// just an edge case, so `.expect()` is not a real risk site.
+#[allow(clippy::expect_used)]
 fn name_regex() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
     RE.get_or_init(|| Regex::new(r"^[a-z][a-z0-9_-]{0,63}$").expect("valid regex"))

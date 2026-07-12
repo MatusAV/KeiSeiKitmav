@@ -20,6 +20,10 @@ pub struct Extracted {
     pub kv: HashMap<String, String>,
 }
 
+// INVARIANT: every call site passes a hardcoded regex literal — a syntax
+// error would fail every test run, so `.expect()` is not a real risk site.
+// If you add a call with a dynamic `pat`, this becomes a real panic risk.
+#[allow(clippy::expect_used)]
 fn re(pat: &str) -> Regex {
     Regex::new(pat).expect("invalid regex pattern in kei-router")
 }

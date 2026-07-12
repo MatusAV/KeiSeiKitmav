@@ -46,6 +46,7 @@ const CHAT_CONCURRENCY: usize = 8;
 
 /// Build the top-level router. `cors_origin` must have been validated at
 /// `AppConfig` construction time so this function cannot fail.
+#[allow(clippy::expect_used)]
 pub fn build_router(state: AppState) -> Router {
     let cors = build_cors(state.config().cors_origin.as_str())
         .expect("cors_origin must be valid — validated in AppConfig::new");

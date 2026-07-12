@@ -63,6 +63,9 @@ fn word_re(key: &str) -> Result<Regex> {
 }
 
 /// Scan `scan_root`, returning scanned_files count and per-key (count, files) map.
+// `counts` is pre-populated from `keys` and `patterns` is derived from the
+// same `keys` slice, so every `key` looked up below is provably present.
+#[allow(clippy::expect_used)]
 pub(crate) fn scan_usages(
     keys: &[String],
     scan_root: &Path,

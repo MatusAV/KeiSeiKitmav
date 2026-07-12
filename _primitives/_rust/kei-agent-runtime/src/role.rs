@@ -37,6 +37,9 @@ pub const MAX_DEPTH: usize = 16;
 /// Role / capability slug pattern. Lowercase start, `[a-z0-9-]` body,
 /// ≤64 chars total. Blocks `..`, `/`, `\`, upper-case, unicode,
 /// whitespace — any of which enables path traversal via `Path::join`.
+// Hardcoded regex literal: a syntax error would fail every test run, not
+// just an edge case, so `.expect()` is not a real risk site.
+#[allow(clippy::expect_used)]
 static NAME_RE: Lazy<Regex> =
     Lazy::new(|| Regex::new(r"^[a-z][a-z0-9-]{0,63}$").expect("compile NAME_RE"));
 

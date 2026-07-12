@@ -20,6 +20,9 @@ pub const MAX_DESCRIPTION_LENGTH: usize = 1_024;
 pub const MAX_NAME_LENGTH: usize = 64;
 
 /// Slug regex — lowercase letters/digits, then `[a-z0-9._-]*`.
+// Hardcoded regex literal: a syntax error would fail every test run, not
+// just an edge case, so `.expect()` is not a real risk site.
+#[allow(clippy::expect_used)]
 fn name_re() -> &'static Regex {
     static RE: OnceLock<Regex> = OnceLock::new();
     RE.get_or_init(|| Regex::new(r"^[a-z0-9][a-z0-9._-]*$").expect("static regex compiles"))

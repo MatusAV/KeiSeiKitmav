@@ -20,6 +20,10 @@ pub struct Topics {
     store: Arc<Mutex<Store>>,
 }
 
+// `.expect("poisoned")` calls below only panic if a prior lock holder
+// panicked while holding the lock — propagating that poison panic is the
+// safer default for this in-memory/sqlite topics store.
+#[allow(clippy::expect_used)]
 impl Topics {
     pub fn from_path(path: impl AsRef<Path>) -> Result<Self, BuddyError> {
         let store = Store::open(path.as_ref())

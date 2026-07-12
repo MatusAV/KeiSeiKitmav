@@ -11,6 +11,7 @@ use serde_json::{Map, Value};
 use sha2::{Digest, Sha256};
 
 /// Produce canonical JSON bytes: stable key order, minimal whitespace.
+#[allow(clippy::expect_used)]
 pub fn canonical_json(v: &Value) -> String {
     let canon = canonicalise(v.clone());
     serde_json::to_string(&canon).expect("canonical_json: serialise never fails for owned Value")

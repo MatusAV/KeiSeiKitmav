@@ -70,7 +70,7 @@ pub struct AppConfig {
 
 impl AppConfig {
     /// Legacy 7-arg builder kept for tests. Panics on bad CORS.
-    #[allow(clippy::too_many_arguments)]
+    #[allow(clippy::too_many_arguments, clippy::expect_used)]
     pub fn new(
         port: Option<u16>, cors_origin: Option<String>, token_path: Option<PathBuf>,
         ledger_path: Option<PathBuf>, pet_root: Option<PathBuf>, memory_db: Option<PathBuf>,

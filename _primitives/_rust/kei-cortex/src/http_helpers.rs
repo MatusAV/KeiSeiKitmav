@@ -9,6 +9,7 @@ use once_cell::sync::Lazy;
 
 /// The process-wide HTTP client.  Shared by `anthropic`, `anthropic_invoker`,
 /// `elevenlabs`, and `fal` so that connection pooling is effective.
+#[allow(clippy::expect_used)]
 pub static HTTP_CLIENT: Lazy<reqwest::Client> = Lazy::new(|| {
     reqwest::Client::builder()
         .build()

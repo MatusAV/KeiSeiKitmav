@@ -63,6 +63,9 @@ impl Graph {
     }
 }
 
+// Hardcoded regex literal: a syntax error would fail every test run, not
+// just an edge case, so `.expect()` is not a real risk site.
+#[allow(clippy::expect_used)]
 fn scan_wikilinks(
     src: &str,
     line_no: usize,

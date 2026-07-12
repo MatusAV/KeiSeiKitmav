@@ -44,6 +44,8 @@ pub fn boundaries_for(local_dt: NaiveDateTime) -> CalendarBoundaries {
 
 /// 00:00 local of `date` → unix seconds (UTC). DST-ambiguous instant
 /// resolves to the earlier offset (consistent for monthly rollups).
+// `from_hms_opt(0, 0, 0)` is always in range — can't fail.
+#[allow(clippy::expect_used)]
 fn midnight_local_to_utc_ts(date: NaiveDate) -> i64 {
     let naive = NaiveDateTime::new(date, NaiveTime::from_hms_opt(0, 0, 0).expect("00:00:00"));
     Local

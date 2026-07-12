@@ -9,6 +9,9 @@ use crate::tree::{collect_markdown, read_lossy, rel};
 use regex::Regex;
 use std::path::Path;
 
+// Hardcoded regex literals below: a syntax error would fail every test run,
+// not just an edge case, so `.expect()` is not a real risk site.
+#[allow(clippy::expect_used)]
 fn extract_directives(content: &str) -> Vec<(String, String)> {
     // Returns (polarity, token) pairs. polarity ∈ {"pos","neg"}.
     let neg = Regex::new(r"(?im)^\s*(?:never|forbidden|prohibited|do not|don't|no):?\s+(.{3,80})$")

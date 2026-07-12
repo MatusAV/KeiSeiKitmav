@@ -70,6 +70,9 @@ pub fn parse_x25519_pkcs8_pem(pem: &str) -> Result<[u8; 32]> {
 }
 
 /// Serialise a 32-byte X25519 private key as a PKCS#8 v1 PEM string.
+// base64 output (`STANDARD.encode`) is always pure ASCII, so any chunk of it
+// is guaranteed valid UTF-8 — the `.expect("ascii")` below can't fail.
+#[allow(clippy::expect_used)]
 pub fn write_x25519_pkcs8_pem(raw_priv: &[u8; 32]) -> String {
     let mut der = Vec::with_capacity(48);
     der.extend_from_slice(&[

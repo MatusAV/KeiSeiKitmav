@@ -46,6 +46,9 @@ impl SessionGuard {
     /// Acquire the lock for `session_key`. Blocks until any concurrent run on
     /// the same key completes — or 30s pass and we declare the prior holder
     /// dead and steal it.
+    // `.close()` is never called on any `LockEntry` semaphore in this crate,
+    // so `acquire_owned()` can never return the "semaphore closed" error.
+    #[allow(clippy::expect_used)]
     pub async fn acquire(&self, session_key: &str) -> SessionLock {
         // Heal stale lock first (cheap peek under DashMap shard lock).
         self.heal_stale(session_key);

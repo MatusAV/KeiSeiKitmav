@@ -81,6 +81,9 @@ fn split_three(token: &str) -> Result<(&str, &str, &str)> {
     Ok((parts[0], parts[1], parts[2]))
 }
 
+// HMAC accepts keys of any length per RFC 2104 (short keys are zero-padded,
+// long keys are hashed down) — `new_from_slice` can't fail here.
+#[allow(clippy::expect_used)]
 fn sign(key: &[u8], body: &[u8]) -> Vec<u8> {
     let mut mac = <HmacSha256 as Mac>::new_from_slice(key)
         .expect("HMAC-SHA256 accepts any key length");

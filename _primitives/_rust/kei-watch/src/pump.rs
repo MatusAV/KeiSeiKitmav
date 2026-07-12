@@ -19,6 +19,10 @@ use std::thread::{self, JoinHandle};
 /// `out_tx`    — destination channel; each accepted canonical event is
 ///               forwarded here.
 /// Returns the thread handle so the watcher can join on drop.
+// `Builder::spawn` only errs on OS resource exhaustion (can't allocate a
+// new thread) — an unrecoverable-environment condition, not something
+// this crate has a graceful fallback for.
+#[allow(clippy::expect_used)]
 pub fn spawn(
     notify_rx: Receiver<notify::Result<notify::Event>>,
     out_tx: Sender<Event>,

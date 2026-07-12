@@ -49,6 +49,9 @@ pub fn parse_ts_glob(roots: &[&Path]) -> Result<Vec<TsType>> {
 }
 
 /// Extract every type/interface block from a single TS source string.
+// Hardcoded regex literal: a syntax error would fail every test run, not
+// just an edge case, so `.expect()` is not a real risk site.
+#[allow(clippy::expect_used)]
 pub fn extract_ts_types(text: &str, source: &str) -> Vec<TsType> {
     let stripped = strip_line_comments(text);
     let mut out = Vec::new();
@@ -102,6 +105,9 @@ fn capture_balanced_braces(text: &str, start: usize) -> Option<String> {
     None
 }
 
+// Hardcoded regex literal: a syntax error would fail every test run, not
+// just an edge case, so `.expect()` is not a real risk site.
+#[allow(clippy::expect_used)]
 fn parse_ts_fields(body: &str) -> Vec<TsField> {
     let field_re = Regex::new(
         r"(?:readonly\s+)?([A-Za-z_][A-Za-z0-9_]*)(\?)?\s*:\s*([^;,\r\n]+?)\s*[;,\r\n]",

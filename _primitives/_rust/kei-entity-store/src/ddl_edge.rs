@@ -14,6 +14,7 @@ use crate::schema::{EdgeKeyKind, FieldKind};
 /// This variant panics on unsupported `extra_columns` FieldKinds; the
 /// engine's migration path uses the fallible variant to surface typed
 /// errors without panicking.
+#[allow(clippy::expect_used)]
 pub fn edge_table_for(edge: &str, kind: EdgeKeyKind) -> String {
     try_edge_table_for(edge, kind).expect("edge_table_for: unsupported extra_column FieldKind")
 }

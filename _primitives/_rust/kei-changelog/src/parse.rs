@@ -8,6 +8,9 @@ use crate::commit::CommitKind;
 use regex::Regex;
 use std::sync::OnceLock;
 
+// Hardcoded regex literal: a syntax error would fail every test run, not
+// just an edge case, so `.expect()` is not a real risk site.
+#[allow(clippy::expect_used)]
 fn re() -> &'static Regex {
     static R: OnceLock<Regex> = OnceLock::new();
     R.get_or_init(|| {
