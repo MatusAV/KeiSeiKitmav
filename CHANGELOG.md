@@ -4,6 +4,16 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
+- **test: smoke tests for the last 3 untested crates** — `kei-graph-export`,
+  `kei-ping`, `kei-tlog` were the only workspace crates with zero tests. Added
+  focused smoke coverage: in-crate unit tests for the pure helpers of the two
+  binary crates (`sanitize_id`/`dna_prefix`/`truncate_chars` incl. Unicode
+  char-boundary safety; `epoch_to_ymd_hms`/`year_days` leap rules/`iso_now`
+  format), and a `tests/smoke.rs` for `kei-ping` covering `PingFilter` TTL +
+  phase/branch logic and a `SqlitePingStore` send→list→upsert→clear round-trip
+  on a temp DB. 12 tests, all green. Workspace test coverage is now 109/109
+  crates.
+
 - **fix(test): de-flake `kei-watch::rapid_modifies_are_debounced`** — the test
   asserted `start.elapsed() < 50ms` on its own 5-write loop, which measured the
   (loaded CI) test harness rather than the debouncer and intermittently failed

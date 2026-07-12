@@ -227,3 +227,44 @@ fn main() -> ExitCode {
         _ => usage(),
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn epoch_zero_is_unix_start() {
+        assert_eq!(epoch_to_ymd_hms(0), (1970, 1, 1, 0, 0, 0));
+    }
+
+    #[test]
+    fn epoch_one_billion_is_2001_09_09() {
+        // 1_000_000_000 == 2001-09-09T01:46:40Z (well-known Unix timestamp)
+        assert_eq!(epoch_to_ymd_hms(1_000_000_000), (2001, 9, 9, 1, 46, 40));
+    }
+
+    #[test]
+    fn year_days_handles_leap_rules() {
+        assert_eq!(year_days(2023), 365);
+        assert_eq!(year_days(2024), 366); // divisible by 4
+        assert_eq!(year_days(1900), 365); // divisible by 100, not 400
+        assert_eq!(year_days(2000), 366); // divisible by 400
+        assert_eq!(year_days(2100), 365);
+    }
+
+    #[test]
+    fn iso_now_is_well_formed() {
+        let s = iso_now();
+        // "YYYY-MM-DDTHH:MM:SSZ" — 20 chars, ends in Z, has the T separator.
+        assert_eq!(s.len(), 20, "unexpected format: {s}");
+        assert!(s.ends_with('Z'), "missing Z: {s}");
+        assert_eq!(s.as_bytes()[10], b'T', "missing T separator: {s}");
+        let year: i32 = s[..4].parse().expect("year prefix parses");
+        assert!(year >= 2020, "clock/date-math sanity failed: {s}");
+    }
+
+    #[test]
+    fn now_epoch_is_after_2020() {
+        assert!(now_epoch() > 1_600_000_000, "epoch clock looks wrong");
+    }
+}
