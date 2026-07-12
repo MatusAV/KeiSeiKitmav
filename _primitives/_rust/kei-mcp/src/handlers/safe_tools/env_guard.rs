@@ -76,7 +76,7 @@ const BANNED_FORWARD: &[&str] = &[
 /// names are case-sensitive on every supported platform). Exposed for
 /// unit tests.
 pub fn is_banned_forward(name: &str) -> bool {
-    BANNED_FORWARD.iter().any(|b| *b == name)
+    BANNED_FORWARD.contains(&name)
 }
 
 /// v0.44 fix #4 (Gemini HIGH): strip parent env on subprocess spawn so secrets

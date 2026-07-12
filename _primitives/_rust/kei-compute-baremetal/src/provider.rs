@@ -131,14 +131,13 @@ impl ComputeProvider for BaremetalCompute {
     }
 
     async fn create(&self, spec: &VmSpec) -> kei_runtime_core::Result<VmHandle> {
-        let target = self.target_for_spec(spec).map_err(BmError::from)?;
+        let target = self.target_for_spec(spec)?;
         // Cloud-init equivalent: run the user's shell snippet remotely.
         if !spec.cloud_init.trim().is_empty() {
             run_remote(&target, &spec.cloud_init)
-                .await
-                .map_err(BmError::from)?;
+                .await?;
         } else {
-            ping(&target).await.map_err(BmError::from)?;
+            ping(&target).await?;
         }
         let host_sha = sha8(target.host.as_bytes());
         let body = format!("{}::{}::{}", target.user, target.host, target.port.unwrap_or(22));
@@ -171,7 +170,7 @@ impl ComputeProvider for BaremetalCompute {
     }
 
     async fn status(&self, h: &VmHandle) -> kei_runtime_core::Result<VmStatus> {
-        let target = self.target_for_handle(h).map_err(BmError::from)?;
+        let target = self.target_for_handle(h)?;
         match ping(&target).await {
             Ok(()) => Ok(VmStatus::Running),
             Err(_) => Ok(VmStatus::Stopped),

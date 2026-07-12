@@ -37,7 +37,7 @@ pub fn run_research(
 
 fn wave_0_extract_claims(prompt: &str) -> Vec<String> {
     prompt
-        .split(|c: char| c == '.' || c == '?' || c == '\n')
+        .split(['.', '?', '\n'])
         .map(|s| s.trim().to_string())
         .filter(|s| s.len() > 4)
         .collect()

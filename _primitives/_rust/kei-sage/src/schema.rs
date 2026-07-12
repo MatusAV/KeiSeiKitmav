@@ -106,7 +106,7 @@ pub fn create_schema(conn: &Connection) -> Result<()> {
         .map_err(|e| match e {
             kei_entity_store::VerbError::Sqlite(sq) => sq,
             other => rusqlite::Error::ToSqlConversionFailure(Box::new(
-                std::io::Error::new(std::io::ErrorKind::Other, other.to_string()),
+                std::io::Error::other(other.to_string()),
             )),
         })?;
     Ok(())

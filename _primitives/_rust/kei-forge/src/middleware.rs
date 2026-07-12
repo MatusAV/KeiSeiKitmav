@@ -31,7 +31,7 @@ pub async fn require_local_host(req: Request, next: Next) -> Result<Response, St
         .get(header::HOST)
         .and_then(|v| v.to_str().ok())
         .unwrap_or("");
-    if ALLOWED_HOSTS.iter().any(|&h| h == host) {
+    if ALLOWED_HOSTS.contains(&host) {
         Ok(next.run(req).await)
     } else {
         Err(StatusCode::MISDIRECTED_REQUEST)

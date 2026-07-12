@@ -16,6 +16,12 @@ pub struct AliveState {
     inner: Mutex<HashMap<String, AgentInfo>>,
 }
 
+impl Default for AliveState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl AliveState {
     pub fn new() -> Self {
         Self {

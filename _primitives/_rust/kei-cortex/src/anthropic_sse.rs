@@ -25,7 +25,7 @@ struct Delta {
 
 /// Maximum buffer size per SSE frame — guards against a runaway upstream
 /// that never emits a `\n\n` frame boundary.
-const MAX_BUF: usize = 1 * 1024 * 1024; // 1 MiB
+const MAX_BUF: usize = 1024 * 1024; // 1 MiB
 
 /// Error returned by `SseParser::push` when the buffer cap is exceeded.
 #[derive(Debug)]

@@ -15,9 +15,9 @@ use subtle::ConstantTimeEq;
 
 /// Pull `(code, state, expected_state, code_verifier)` out of an
 /// [`AuthChallenge::OAuthCode`] for `provider == "google"`.
-pub(crate) fn unpack_challenge<'a>(
-    c: &'a AuthChallenge,
-) -> kei_runtime_core::Result<(&'a str, &'a str, &'a str, Option<&'a str>)> {
+pub(crate) fn unpack_challenge(
+    c: &AuthChallenge,
+) -> kei_runtime_core::Result<(&str, &str, &str, Option<&str>)> {
     match c {
         AuthChallenge::OAuthCode {
             provider, code, state, expected_state, code_verifier,

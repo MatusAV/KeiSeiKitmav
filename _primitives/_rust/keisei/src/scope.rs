@@ -20,8 +20,10 @@ use std::fmt;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum Scope {
     /// Host-wide config — e.g. `~/.claude/settings.json`, `~/.cursor/mcp.json`.
+    #[default]
     User,
     /// Project-local config — e.g. `./.claude/settings.json`, `./.cursor/mcp.json`.
     Project,
@@ -31,11 +33,6 @@ pub enum Scope {
     Auto,
 }
 
-impl Default for Scope {
-    fn default() -> Self {
-        Scope::User
-    }
-}
 
 impl fmt::Display for Scope {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {

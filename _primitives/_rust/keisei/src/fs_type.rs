@@ -44,7 +44,7 @@ pub fn detect_fs_warning(path: &Path) -> FsWarning {
     }
     #[cfg(target_os = "linux")]
     {
-        return linux_detect(path);
+        linux_detect(path)
     }
     #[cfg(not(any(target_os = "macos", target_os = "linux")))]
     {

@@ -78,7 +78,7 @@ fn estimate_cents(p: &dyn Provider, in_tok: u64, out_tok: u64) -> u64 {
     let out_cents = (p.cost_per_m_tok_output_cents() as u64) * out_tok;
     let total = in_cents + out_cents;
     // ceil-div by 1M
-    (total + 999_999) / 1_000_000
+    total.div_ceil(1_000_000)
 }
 
 #[cfg(test)]

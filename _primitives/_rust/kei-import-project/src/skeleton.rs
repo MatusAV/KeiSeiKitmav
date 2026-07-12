@@ -47,10 +47,10 @@ fn write_struct_stub(out: &mut String, type_name: &str) {
 
 fn write_dna_impl(out: &mut String, type_name: &str) {
     out.push_str(&format!("impl kei_runtime_core::dna::HasDna for {type_name} {{\n"));
-    out.push_str(&format!("    fn dna(&self) -> &kei_runtime_core::dna::Dna {{\n"));
+    out.push_str(&"    fn dna(&self) -> &kei_runtime_core::dna::Dna {\n".to_string());
     out.push_str(&format!("        unimplemented!(\"HasDna::dna for {type_name}\")\n"));
     out.push_str("    }\n");
-    out.push_str(&format!("    fn parent_dna(&self) -> Option<&kei_runtime_core::dna::Dna> {{\n"));
+    out.push_str(&"    fn parent_dna(&self) -> Option<&kei_runtime_core::dna::Dna> {\n".to_string());
     out.push_str(&format!("        unimplemented!(\"HasDna::parent_dna for {type_name}\")\n"));
     out.push_str("    }\n");
     out.push_str("}\n\n");

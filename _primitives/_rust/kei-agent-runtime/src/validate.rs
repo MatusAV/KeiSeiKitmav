@@ -170,6 +170,6 @@ fn truncate_agent_id(candidate: &str, rand_hex: &str) -> String {
     }
     let keep = MAX_AGENT_ID_LEN.saturating_sub(rand_hex.len() + 1);
     let head = &candidate[..keep.min(candidate.len())];
-    let head_trimmed = head.trim_end_matches(|c: char| c == '-' || c == '.' || c == '_');
+    let head_trimmed = head.trim_end_matches(['-', '.', '_']);
     format!("{head_trimmed}-{rand_hex}")
 }

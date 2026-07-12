@@ -86,7 +86,9 @@ impl SessionSource {
 /// Type of inbound message content.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
+#[derive(Default)]
 pub enum MessageType {
+    #[default]
     Text,
     Photo,
     Voice,
@@ -96,11 +98,6 @@ pub enum MessageType {
     Sticker,
 }
 
-impl Default for MessageType {
-    fn default() -> Self {
-        MessageType::Text
-    }
-}
 
 /// A normalised inbound message event. All adapters produce this shape.
 #[derive(Debug, Clone, Serialize, Deserialize)]

@@ -42,14 +42,14 @@ pub fn run_execute(
     Ok(())
 }
 
-fn print_json(prompts: &[phase_prompt::PhasePrompt]) -> () {
+fn print_json(prompts: &[phase_prompt::PhasePrompt]) {
     match phase_prompt::render_json(prompts) {
         Ok(s) => println!("{s}"),
         Err(e) => eprintln!("json render failed: {e}"),
     }
 }
 
-fn print_markdown(plan: &executor::ExecutorPlan) -> () {
+fn print_markdown(plan: &executor::ExecutorPlan) {
     println!("| Phase | Trait | Modules | Agent type | Status |");
     println!("|---|---|---:|---|---|");
     for (rec, prompt) in plan.records.iter().zip(plan.prompts.iter()) {

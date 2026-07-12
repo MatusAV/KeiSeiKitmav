@@ -31,7 +31,7 @@ pub fn rank_actions(actions: Vec<RawAction>, kinds: Vec<ActionKind>) -> Vec<Rank
     assert_eq!(actions.len(), kinds.len(), "rank_actions: parallel slice length mismatch");
     let scored: Vec<(RawAction, ActionKind, f64)> = actions
         .into_iter()
-        .zip(kinds.into_iter())
+        .zip(kinds)
         .map(|(a, k)| {
             let s = compute_score(&a);
             (a, k, s)

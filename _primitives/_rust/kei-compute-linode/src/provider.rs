@@ -67,7 +67,7 @@ impl LinodeCompute {
     }
 
     fn require_tier(tier: &str) -> Result<(), Error> {
-        if TIERS.iter().any(|t| *t == tier) {
+        if TIERS.contains(&tier) {
             Ok(())
         } else {
             Err(Error::InvalidTier(tier.to_string()))

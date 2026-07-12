@@ -59,7 +59,7 @@ impl NGramStats {
             let nxt = chars[i];
             self.ngram_counts
                 .entry(ctx)
-                .or_insert_with(HashMap::new)
+                .or_default()
                 .entry(nxt)
                 .and_modify(|c| *c += 1)
                 .or_insert(1);

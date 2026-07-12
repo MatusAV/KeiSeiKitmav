@@ -72,7 +72,7 @@ pub fn strip_markdown(text: &str) -> String {
         if l.starts_with('#') || l.starts_with("```") || l.starts_with("---") {
             continue;
         }
-        let clean = l.trim_start_matches(|c: char| c == '*' || c == '-' || c == '>');
+        let clean = l.trim_start_matches(['*', '-', '>']);
         let clean = clean.trim();
         if !clean.is_empty() {
             if !out.is_empty() {

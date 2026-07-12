@@ -68,9 +68,7 @@ fn mk_conflict(a: &str, b: &str, token: &str) -> Conflict {
         Severity::High,
         vec![a.to_string(), b.to_string()],
         format!("contradictory directive on '{}'", token),
-        format!(
-            "review both files; keep directive in the more-specific rule, drop or narrow in the other"
-        ),
+        "review both files; keep directive in the more-specific rule, drop or narrow in the other".to_string(),
         false,
     )
 }

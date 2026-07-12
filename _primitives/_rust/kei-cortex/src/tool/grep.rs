@@ -68,7 +68,7 @@ fn scan(root: &str, needle: &Regex, glob_re: Option<&Regex>, mode: &str) -> Stri
             continue;
         }
         let path = entry.path().to_string_lossy().to_string();
-        if glob_re.map_or(false, |g| !g.is_match(&path)) {
+        if glob_re.is_some_and(|g| !g.is_match(&path)) {
             continue;
         }
         let Ok(text) = std::fs::read_to_string(entry.path()) else {

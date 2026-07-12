@@ -64,9 +64,9 @@ pub fn classify(name: &str, path: &Path) -> Option<ModelEntry> {
 /// non-conforming name (skipped by caller).
 fn hf_id_from_dirname(name: &str) -> Option<String> {
     let stripped = name.strip_prefix("models--")?;
-    let mut parts = stripped.splitn(2, "--");
-    let org = parts.next()?;
-    let repo = parts.next()?;
+    let (org, repo) = stripped.split_once("--")?;
+    
+    
     Some(format!("{org}/{repo}"))
 }
 

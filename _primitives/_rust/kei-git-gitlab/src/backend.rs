@@ -156,7 +156,7 @@ async fn git_capture(args: &[&str], cwd: &Path) -> kei_runtime_core::Result<Stri
         .current_dir(cwd)
         .output()
         .await
-        .map_err(|e| kei_runtime_core::Error::Io(e))?;
+        .map_err(kei_runtime_core::Error::Io)?;
     if !out.status.success() {
         return Err(kei_runtime_core::Error::Provider(format!(
             "git {}: {}",

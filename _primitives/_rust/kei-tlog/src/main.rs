@@ -165,7 +165,7 @@ fn cmd_wrap(name: &str, argv: &[String]) -> ExitCode {
     let status = Command::new(&argv[0]).args(&argv[1..]).status();
     let exit = status.as_ref().map(|s| s.code().unwrap_or(-1)).unwrap_or(-1);
     let _ = cmd_stop(name, exit);
-    ExitCode::from(if exit < 0 || exit > 255 { 1 } else { exit as u8 })
+    ExitCode::from(if !(0..=255).contains(&exit) { 1 } else { exit as u8 })
 }
 
 fn usage() -> ExitCode {

@@ -55,7 +55,7 @@ pub(crate) fn parse_env_file(path: &Path) -> Result<Vec<String>> {
 }
 
 fn is_text_file(path: &Path) -> bool {
-    path.extension().and_then(|e| e.to_str()).map_or(false, |ext| TEXT_EXTS.contains(&ext))
+    path.extension().and_then(|e| e.to_str()).is_some_and(|ext| TEXT_EXTS.contains(&ext))
 }
 
 fn word_re(key: &str) -> Result<Regex> {

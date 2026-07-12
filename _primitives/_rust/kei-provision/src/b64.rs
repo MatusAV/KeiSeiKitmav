@@ -5,7 +5,7 @@ const TABLE: &[u8; 64] =
     b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
 pub fn encode(raw: &[u8]) -> String {
-    let mut out = String::with_capacity((raw.len() + 2) / 3 * 4);
+    let mut out = String::with_capacity(raw.len().div_ceil(3) * 4);
     for chunk in raw.chunks(3) {
         let b0 = chunk[0];
         let b1 = chunk.get(1).copied().unwrap_or(0);

@@ -67,7 +67,7 @@ impl Capability for PatternGate {
 
 impl PatternGate {
     fn tool_applies(&self, tool: &str) -> bool {
-        self.tools.is_empty() || self.tools.iter().any(|t| *t == tool)
+        self.tools.is_empty() || self.tools.contains(&tool)
     }
 
     fn bypass_active(&self, env: &HashMap<String, String>) -> bool {

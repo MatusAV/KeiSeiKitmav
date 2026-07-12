@@ -43,10 +43,10 @@ impl GitBackend for BitbucketBackend {
     fn provider_name(&self) -> &'static str { "bitbucket" }
 
     async fn ensure_repo(&self, remote: &GitRemote) -> kei_runtime_core::Result<()> {
-        let (ws, slug) = parse_workspace_slug(&remote.url).map_err(BbError::from)?;
-        let exists = self.client.repo_exists(&ws, &slug).await.map_err(BbError::from)?;
+        let (ws, slug) = parse_workspace_slug(&remote.url)?;
+        let exists = self.client.repo_exists(&ws, &slug).await?;
         if !exists {
-            self.client.create_repo(&ws, &slug).await.map_err(BbError::from)?;
+            self.client.create_repo(&ws, &slug).await?;
         }
         Ok(())
     }
@@ -113,8 +113,7 @@ fn run_git(dir: Option<&str>, args: &[&str]) -> std::io::Result<String> {
     if let Some(d) = dir { cmd.current_dir(d); }
     let out = cmd.args(args).output()?;
     if !out.status.success() {
-        return Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
+        return Err(std::io::Error::other(
             format!("git {} failed: {}", args.join(" "), String::from_utf8_lossy(&out.stderr)),
         ));
     }

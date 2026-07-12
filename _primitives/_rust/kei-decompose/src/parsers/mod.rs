@@ -103,7 +103,8 @@ pub fn detect_format(md: &str) -> DetectResult {
 pub fn parser_by_name(name: &str) -> Option<Box<dyn FormatParser>> {
     let key = name.to_lowercase();
     let key = key.as_str();
-    let mapped = match key {
+    
+    match key {
         "research" => Some(Box::new(research::ResearchParser) as Box<dyn FormatParser>),
         "audit" | "wave-audit" => Some(Box::new(audit::AuditParser) as Box<dyn FormatParser>),
         "sleep" => Some(Box::new(sleep::SleepParser) as Box<dyn FormatParser>),
@@ -114,8 +115,7 @@ pub fn parser_by_name(name: &str) -> Option<Box<dyn FormatParser>> {
             Some(Box::new(new_project::NewProjectParser) as Box<dyn FormatParser>)
         }
         _ => None,
-    };
-    mapped
+    }
 }
 
 #[cfg(test)]

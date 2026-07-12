@@ -115,7 +115,7 @@ pub fn edges_agent_manifest(
 }
 
 fn subagent_slug(branch: &str) -> String {
-    let part = branch.split('/').last().unwrap_or(branch);
+    let part = branch.split('/').next_back().unwrap_or(branch);
     let stripped = strip_trailing_digits_and_dashes(part);
     let stripped = stripped.strip_prefix("inline-").unwrap_or(stripped);
     stripped.to_string()

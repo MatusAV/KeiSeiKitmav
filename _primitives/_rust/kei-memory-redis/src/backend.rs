@@ -78,7 +78,7 @@ impl MemoryBackend for RedisBackend {
             .store
             .item_key(&item.kind, item.created_at_ms, &item.key);
         let payload = serde_json::to_string(item).map_err(Error::from)?;
-        let mut conn = self.store.conn().await.map_err(Into::<Error>::into)?;
+        let mut conn = self.store.conn().await?;
         // SET the JSON payload (no TTL — retention is operator policy).
         let _: () = conn
             .set(&item_key, payload)
@@ -124,7 +124,7 @@ impl MemoryBackend for RedisBackend {
 
         // Tag filter: intersect with SMEMBERS of any requested tag.
         if !q.tag_any.is_empty() {
-            let mut conn = self.store.conn().await.map_err(Into::<Error>::into)?;
+            let mut conn = self.store.conn().await?;
             let mut tag_union: std::collections::HashSet<String> = Default::default();
             for tag in &q.tag_any {
                 let members: Vec<String> = conn
@@ -137,7 +137,7 @@ impl MemoryBackend for RedisBackend {
         }
 
         // GET payloads, decode, sort by ts desc, apply limit.
-        let mut conn = self.store.conn().await.map_err(Into::<Error>::into)?;
+        let mut conn = self.store.conn().await?;
         let mut items: Vec<MemoryItem> = Vec::with_capacity(hits.len());
         for k in &hits {
             let raw: Option<String> =
@@ -170,7 +170,7 @@ impl MemoryBackend for RedisBackend {
         if to_delete.is_empty() {
             return Ok(0);
         }
-        let mut conn = self.store.conn().await.map_err(Into::<Error>::into)?;
+        let mut conn = self.store.conn().await?;
 
         // Drop tag-set membership for every deleted item-id. We don't
         // know the tag list at this point, so SCAN tag keys and SREM

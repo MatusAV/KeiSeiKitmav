@@ -107,7 +107,7 @@ impl JobRunner {
             .await;
 
         for id in due_ids {
-            self.fire_one(&id, &tx, now).await?;
+            self.fire_one(&id, tx, now).await?;
         }
         Ok(())
     }

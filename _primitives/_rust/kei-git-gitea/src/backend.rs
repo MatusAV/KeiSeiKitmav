@@ -49,7 +49,7 @@ impl GitBackend for GiteaBackend {
     fn supports_auto_create(&self) -> bool { true }
 
     async fn ensure_repo(&self, remote: &GitRemote) -> kei_runtime_core::Result<()> {
-        let (owner, repo) = parse_owner_repo(&remote.url).map_err(GtError::from)?;
+        let (owner, repo) = parse_owner_repo(&remote.url)?;
         let exists = self.client.repo_exists(&owner, &repo).await
             .map_err(kei_runtime_core::Error::from)?;
         if !exists {

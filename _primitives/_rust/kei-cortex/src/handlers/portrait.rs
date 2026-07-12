@@ -135,7 +135,7 @@ async fn read_short_text(
 }
 
 fn validate_base_model(base: &str) -> Result<(), AppError> {
-    if ALLOWED_BASE_MODELS.iter().any(|m| *m == base) {
+    if ALLOWED_BASE_MODELS.contains(&base) {
         Ok(())
     } else {
         Err(AppError::BadRequest(format!(

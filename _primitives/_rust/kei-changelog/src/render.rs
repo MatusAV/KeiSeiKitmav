@@ -61,7 +61,7 @@ pub fn render_markdown(grouped: &Grouped, opts: &RenderOpts) -> String {
         out.push('\n');
     }
 
-    for (_, (kind, commits)) in &grouped.by_kind {
+    for (kind, commits) in grouped.by_kind.values() {
         out.push_str(&format!("### {}\n\n", kind.heading()));
         for c in commits {
             let sha = if opts.include_sha { Some(c.sha.as_str()) } else { None };

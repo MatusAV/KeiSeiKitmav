@@ -60,10 +60,8 @@ fn list_open(conn: &Connection) -> ExitCode {
         Ok(r) => r,
         Err(e) => return err(&format!("backlog list query: {e}")),
     };
-    for row in rows {
-        if let Ok((ts, it)) = row {
-            println!("{ts}\t{it}");
-        }
+    for (ts, it) in rows.flatten() {
+        println!("{ts}\t{it}");
     }
     ExitCode::SUCCESS
 }

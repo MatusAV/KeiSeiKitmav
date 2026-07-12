@@ -43,7 +43,7 @@ pub fn scan_research_sources(since_unix_secs: u64) -> Result<SleepScanOutput> {
     walk_sleep_results(&sleep_root, since_unix_secs, &mut hits);
     let vault_root = Path::new(&home).join("Projects/KnowledgeVault/research");
     walk_vault_masters(&vault_root, since_unix_secs, &mut hits);
-    hits.sort_by(|a, b| a.modified_unix_secs.cmp(&b.modified_unix_secs));
+    hits.sort_by_key(|a| a.modified_unix_secs);
     Ok(SleepScanOutput { since_unix_secs, hits })
 }
 

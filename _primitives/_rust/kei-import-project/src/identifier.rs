@@ -126,7 +126,7 @@ fn python_name(content: &str, _path: &std::path::Path) -> Result<Option<String>>
     for line in content.lines() {
         let t = line.trim();
         if t.starts_with("name") && t.contains('=') {
-            if let Some(v) = t.splitn(2, '=').nth(1) {
+            if let Some(v) = t.split_once('=').map(|x| x.1) {
                 let name = v.trim().trim_matches(|c| c == '\'' || c == '"' || c == ',');
                 if !name.is_empty() {
                     return Ok(Some(name.to_owned()));
@@ -142,7 +142,7 @@ fn go_name(content: &str, _path: &std::path::Path) -> Result<Option<String>> {
         let t = line.trim();
         if t.starts_with("module ") {
             let module = t["module ".len()..].trim();
-            let name = module.split('/').last().unwrap_or(module).to_owned();
+            let name = module.split('/').next_back().unwrap_or(module).to_owned();
             return Ok(Some(name));
         }
     }

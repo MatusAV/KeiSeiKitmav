@@ -73,7 +73,7 @@ fn fill_zero_defaults(t: &mut Trajectory, union: &BTreeSet<String>) {
     for tool in union {
         t.tool_stats
             .entry(tool.clone())
-            .or_insert_with(ToolStats::default);
+            .or_default();
     }
 }
 

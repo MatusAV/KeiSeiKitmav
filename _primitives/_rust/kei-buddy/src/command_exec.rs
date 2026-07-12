@@ -18,7 +18,7 @@ pub(crate) async fn exec_topics(chat_id: i64, topics: &Topics) -> String {
         Ok(list) => {
             let mut out = String::new();
             for (i, unit) in list.iter().take(10).enumerate() {
-                let slug = unit.source_path.split('/').last().unwrap_or(&unit.source_path);
+                let slug = unit.source_path.split('/').next_back().unwrap_or(&unit.source_path);
                 out.push_str(&format!("{}. {} ({})\n", i + 1, unit.title, slug));
             }
             out.trim_end().to_string()

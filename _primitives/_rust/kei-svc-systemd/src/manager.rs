@@ -108,12 +108,12 @@ impl ServiceManager for SystemdManager {
     }
 
     async fn start(&self, name: &str) -> kei_runtime_core::Result<()> {
-        self.run_systemctl(&["start", name]).map_err(Error::from)?;
+        self.run_systemctl(&["start", name])?;
         Ok(())
     }
 
     async fn stop(&self, name: &str) -> kei_runtime_core::Result<()> {
-        self.run_systemctl(&["stop", name]).map_err(Error::from)?;
+        self.run_systemctl(&["stop", name])?;
         Ok(())
     }
 
@@ -132,7 +132,7 @@ impl ServiceManager for SystemdManager {
     }
 
     async fn enable_at_boot(&self, name: &str) -> kei_runtime_core::Result<()> {
-        self.run_systemctl(&["enable", name]).map_err(Error::from)?;
+        self.run_systemctl(&["enable", name])?;
         Ok(())
     }
 }
