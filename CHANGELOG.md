@@ -4,6 +4,23 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
+Provisioner unification completed (v0.24 convergence item, finished):
+
+- **`kei-provision` is now the sole VPS provisioner** — the back-compat shims
+  `_primitives/provision-hetzner.sh` and `_primitives/provision-vultr.sh` (each
+  a one-line `exec kei-provision <backend> "$@"` forwarder) are removed. All
+  callers now invoke the unified Rust binary directly: the `vm-provision` skill
+  (Phase 3), `onboard` proposals, `MANIFEST.toml` `ops`/`full` profiles, and the
+  `install/lib-prereqs.sh` soft-dep gate (which now maps `kei-provision` →
+  needs `hcloud` + `vultr-cli`, so the install-time warnings survive the shim
+  removal). Docs (REFERENCE, INSTALL, CONVERGENCE-PLAN, deploy-hetzner-cloud,
+  PLUGIN) repointed; counts corrected (shell primitives 13→11, `ops` profile
+  9→7). Also fixed a latent bug: `vm-provision`'s vultr command still passed
+  the pre-unification `--plan`/`--region` flags, which `kei-provision` rejects —
+  now `--type`/`--location`. `kei-provision`'s own `Cargo.toml` metadata
+  corrected (backends are Hetzner + Vultr, not the never-implemented
+  Linode/DO/baremetal; `supersedes` now lists both shells).
+
 Tech-debt audit fixes (quality pass, no behaviour change):
 
 - **`scripts/check-repo-ssot.sh` — SSOT drift guard, wired into CI** — enforces

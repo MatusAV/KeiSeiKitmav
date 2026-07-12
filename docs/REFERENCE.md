@@ -325,7 +325,7 @@ Entry-point that mounts a portable brain directory into one or more AI clients. 
 
 ## Shell primitives
 
-All 13 live under `_primitives/*.sh`. Installed with `chmod +x` at `~/.claude/agents/_primitives/`. Shell primitives are POSIX sh where feasible; two (`provision-hetzner`, `provision-vultr`, `harden-base`) use bash explicitly.
+All 11 live under `_primitives/*.sh`. Installed with `chmod +x` at `~/.claude/agents/_primitives/`. Shell primitives are POSIX sh where feasible; one (`harden-base`) uses bash explicitly. VPS provisioning is handled by the unified Rust `kei-provision` binary (see below).
 
 ### `tomd.sh` — universal format → markdown
 
@@ -358,35 +358,20 @@ cat log.jsonl | log-ship --target stdout --validate
 
 Env (no CLI token leak): `LOG_SHIP_DD_API_KEY`, `LOG_SHIP_BEARER`.
 
-### `provision-hetzner.sh` — Hetzner Cloud provisioner
+### Provisioning → `kei-provision` (Rust)
 
-Idempotent wrapper over `hcloud` CLI. Re-running `create <name>` on an existing server prints its IP and exits 0.
-
-```
-provision-hetzner create <name> [--type cx22|cax11] [--location fsn1]
-                                [--image debian-12] [--ssh-key <id>]
-                                [--firewall <name>] [--user-data <file>]
-provision-hetzner status  <name>
-provision-hetzner destroy <name> [--force]
-provision-hetzner list
-```
-
-Env (RULE 0.8): `HCLOUD_TOKEN`.
-
-### `provision-vultr.sh` — Vultr provisioner
-
-Same shape as Hetzner. Uses `vultr-cli` v3.
+The former `provision-hetzner.sh` / `provision-vultr.sh` shells were unified into the Rust `kei-provision` binary (v0.24). Idempotent — re-running `create <name>` on an existing server prints its IP and exits 0.
 
 ```
-provision-vultr create <label> [--plan vc2-1c-1gb] [--region ams]
-                               [--os-id 2136] [--ssh-key <id>]
-                               [--firewall <group-id>] [--user-data <file>]
-provision-vultr status  <label>
-provision-vultr destroy <label> [--force]
-provision-vultr list
+kei-provision <hetzner|vultr> create <name> [--type T] [--location L]
+                                            [--image I] [--ssh-key K]
+                                            [--firewall F] [--user-data <file>]
+kei-provision <backend> status  <name>
+kei-provision <backend> destroy <name> [--force]
+kei-provision <backend> list
 ```
 
-Env (RULE 0.8): `VULTR_API_KEY`. Idempotency key is the human `label` field.
+Backend defaults — hetzner: `--type cx22 --location fsn1 --image debian-12`; vultr: `--type vc2-1c-1gb --location ams`. Env (RULE 0.8): `HCLOUD_TOKEN` (hetzner) · `VULTR_API_KEY` (vultr).
 
 ### `harden-base.sh` — post-provision baseline hardening
 

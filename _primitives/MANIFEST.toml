@@ -18,7 +18,7 @@
 [profile]
 minimal = []
 core    = ["tomd", "kei-doctor"]
-ops     = ["kei-ledger", "ssh-check", "firewall-diff", "provision-hetzner", "provision-vultr", "harden-base", "metrics-scrape", "log-ship", "kei-provision"]
+ops     = ["kei-ledger", "ssh-check", "firewall-diff", "harden-base", "metrics-scrape", "log-ship", "kei-provision"]
 dev     = ["kei-migrate", "kei-changelog", "kei-ci-lint", "kei-docs-scaffold", "kei-memory", "kei-conflict-scan", "kei-refactor-engine", "kei-graph-check", "kei-store", "kei-artifact", "kei-agent-runtime", "kei-capability", "kei-entity-store", "kei-pipe", "kei-cache", "kei-spawn", "kei-replay"]
 mcp     = ["kei-router", "kei-sage", "kei-task", "kei-chat-store", "kei-crossdomain", "kei-search-core", "kei-content-store", "kei-social-store", "kei-curator", "kei-auth"]
 # cortex profile: kei-cortex daemon + транзитивные path-deps.
@@ -36,9 +36,9 @@ buddy   = ["kei-buddy", "kei-telegram-webhook", "kei-shared", "kei-chat-store", 
 local-mirror = ["kei-cortex", "kei-pet", "kei-shared", "kei-ledger", "kei-memory", "frustration-matrix", "kei-skill-importer", "kei-router", "kei-dna-index", "kei-atom-discovery", "dev-hub-forgejo", "dev-hub-forgejo-runner"]
 dashboard    = ["kei-cortex", "kei-pet", "kei-shared", "kei-ledger", "kei-memory", "frustration-matrix", "kei-skill-importer", "kei-router", "kei-dna-index", "kei-atom-discovery", "dev-hub-forgejo", "dev-hub-forgejo-runner", "kei-projects-index", "kei-projects-watcher", "dev-hub-datasette"]
 full-hub     = ["kei-cortex", "kei-pet", "kei-shared", "kei-ledger", "kei-memory", "frustration-matrix", "kei-skill-importer", "kei-router", "kei-dna-index", "kei-atom-discovery", "dev-hub-forgejo", "dev-hub-forgejo-runner", "kei-projects-index", "kei-projects-watcher", "dev-hub-datasette", "dev-hub-zoekt", "dev-hub-mdbook", "dev-hub-restic", "dev-hub-gdrive-import"]
-full    = ["tomd", "kei-doctor", "kei-ledger", "kei-migrate", "kei-changelog", "ssh-check", "firewall-diff", "provision-hetzner", "provision-vultr", "harden-base", "metrics-scrape", "log-ship", "kei-ci-lint", "kei-docs-scaffold", "kei-memory", "kei-conflict-scan", "kei-refactor-engine", "kei-graph-check", "kei-store", "kei-router", "kei-sage", "kei-task", "kei-chat-store", "kei-crossdomain", "kei-search-core", "kei-content-store", "kei-social-store", "kei-curator", "kei-auth", "kei-artifact", "keisei", "kei-agent-runtime", "kei-capability", "kei-provision", "kei-entity-store", "kei-pipe", "kei-cache", "kei-spawn", "kei-replay", "kei-cortex", "kei-pet", "kei-shared", "frustration-matrix", "kei-skill-importer", "kei-projects-index", "kei-projects-watcher", "dev-hub-forgejo", "dev-hub-forgejo-runner", "dev-hub-datasette", "dev-hub-zoekt", "dev-hub-mdbook", "dev-hub-restic", "dev-hub-gdrive-import"]
+full    = ["tomd", "kei-doctor", "kei-ledger", "kei-migrate", "kei-changelog", "ssh-check", "firewall-diff", "harden-base", "metrics-scrape", "log-ship", "kei-ci-lint", "kei-docs-scaffold", "kei-memory", "kei-conflict-scan", "kei-refactor-engine", "kei-graph-check", "kei-store", "kei-router", "kei-sage", "kei-task", "kei-chat-store", "kei-crossdomain", "kei-search-core", "kei-content-store", "kei-social-store", "kei-curator", "kei-auth", "kei-artifact", "keisei", "kei-agent-runtime", "kei-capability", "kei-provision", "kei-entity-store", "kei-pipe", "kei-cache", "kei-spawn", "kei-replay", "kei-cortex", "kei-pet", "kei-shared", "frustration-matrix", "kei-skill-importer", "kei-projects-index", "kei-projects-watcher", "dev-hub-forgejo", "dev-hub-forgejo-runner", "dev-hub-datasette", "dev-hub-zoekt", "dev-hub-mdbook", "dev-hub-restic", "dev-hub-gdrive-import"]
 
-# --- shell primitives (13) -------------------------------------------------
+# --- shell primitives (11) -------------------------------------------------
 
 [primitive.tomd]
 kind = "shell"
@@ -57,18 +57,6 @@ kind = "shell"
 file = "harden-base.sh"
 deps = ["bash", "apt (runs on target Debian/Ubuntu VPS)"]
 desc = "Idempotent Debian/Ubuntu baseline hardening (fail2ban, ufw, unattended-upgrades)"
-
-[primitive.provision-hetzner]
-kind = "shell"
-file = "provision-hetzner.sh"
-deps = ["hcloud CLI", "HCLOUD_TOKEN env var"]
-desc = "Hetzner Cloud server provisioner — create/status/destroy/list"
-
-[primitive.provision-vultr]
-kind = "shell"
-file = "provision-vultr.sh"
-deps = ["vultr-cli v3", "VULTR_API_KEY env var"]
-desc = "Vultr VPS provisioner — create/status/destroy/list"
 
 [primitive.metrics-scrape]
 kind = "shell"

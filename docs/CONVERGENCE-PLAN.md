@@ -28,7 +28,7 @@ Source: `docs/CONVERGENCE-AUDIT-ATOMS.md` (architect, E2).
 | Consolidation | From | To | When | Effort |
 |---|---|---|---|---|
 | **SQLite-CRUD engine** | 6 crates (kei-chat/content/social/sage/task/crossdomain-store) | 1 `kei-entity-store` engine + 6 thin schema plugins | **parallel with Stream B** (not before) | 2-3 days |
-| **Provisioner unification** | 3 shells (provision-hetzner, provision-vultr, harden-base) | 1 `kei-provision <backend>` Rust (harden-base stays — different lifecycle) | **v0.24 now** | 0.5-1 day |
+| **Provisioner unification** | 3 shells (provision-hetzner, provision-vultr, harden-base) | 1 `kei-provision <backend>` Rust (harden-base stays — different lifecycle) | **✅ done (v0.64 — shims removed)** | 0.5-1 day |
 | **4 unmapped LBM-port crates** | unknown | audit after mapping | post-unlock (2026-06-03+) | TBD |
 
 **Evidence:** `Store::open` is byte-identical across 5 crates (`kei-chat-store/src/store.rs:13-21` et al). FTS re-index literal-same body. Deps 7-liner identical. ~500 LOC duplication removed.

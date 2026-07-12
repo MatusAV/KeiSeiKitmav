@@ -44,7 +44,7 @@ Paths inside `hooks/hooks.json` use `${CLAUDE_PLUGIN_ROOT}` (expanded by Claude 
 | Update path | `/plugin update keisei` | `git pull && ./install.sh` |
 | Update visibility | Claude Code shows version change | silent |
 
-**Bottom line:** plugin install is the right default for the agent-kit experience (agents + skills + hooks). For the Rust primitives (`tomd`, `kei-ledger`, `provision-hetzner`, `kei-migrate`, etc.), fall back to the classic installer or run it alongside the plugin — the two don't collide because the plugin namespaces into its own install dir and the classic installer writes to `~/.claude/`.
+**Bottom line:** plugin install is the right default for the agent-kit experience (agents + skills + hooks). For the Rust primitives (`tomd`, `kei-ledger`, `kei-provision`, `kei-migrate`, etc.), fall back to the classic installer or run it alongside the plugin — the two don't collide because the plugin namespaces into its own install dir and the classic installer writes to `~/.claude/`.
 
 ## Prerequisites
 

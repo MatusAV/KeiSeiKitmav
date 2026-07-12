@@ -90,8 +90,7 @@ _soft_dep_flags() {
     case "$p" in
       tomd)                                   needs_pandoc=1 ;;
       kei-ledger|kei-migrate)                 needs_sqlite=1 ;;
-      provision-hetzner)                      needs_hcloud=1 ;;
-      provision-vultr)                        needs_vultr=1 ;;
+      kei-provision)                          needs_hcloud=1; needs_vultr=1 ;;
       kei-ci-lint)                            needs_yq=1 ;;
       kei-cortex)                             needs_python=1; needs_ffmpeg=1 ;;
       cortex-ui)                              needs_node=1;   needs_pnpm=1   ;;
@@ -112,10 +111,10 @@ check_soft_prereqs() {
     warn "sqlite3 CLI not found — kei-ledger/kei-migrate work without it (rusqlite embedded). Install for manual DB inspection: brew install sqlite"
   fi
   if [ "$n_hcloud" = "1" ] && ! command -v hcloud >/dev/null 2>&1; then
-    warn "hcloud CLI not found — provision-hetzner requires it. Install: brew install hcloud"
+    warn "hcloud CLI not found — kei-provision (hetzner backend) requires it. Install: brew install hcloud"
   fi
   if [ "$n_vultr" = "1" ] && ! command -v vultr-cli >/dev/null 2>&1; then
-    warn "vultr-cli not found — provision-vultr requires it. Install: brew install vultr/vultr-cli/vultr-cli"
+    warn "vultr-cli not found — kei-provision (vultr backend) requires it. Install: brew install vultr/vultr-cli/vultr-cli"
   fi
   if [ "$n_yq" = "1" ] && ! command -v yq >/dev/null 2>&1; then
     warn "yq not found — kei-ci-lint requires yq v4+ (mikefarah/yq). Install: brew install yq"

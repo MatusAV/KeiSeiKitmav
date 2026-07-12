@@ -44,7 +44,7 @@ Attach to the server via `firewalls { firewall_id = … }`. Cloud Firewall is th
 **Snapshots + rescue:** `hcloud_snapshot` for golden images; `hcloud server enable-rescue` before SSH lockout recovery. Back up `user_data` and TF state (remote backend: S3-compatible such as R2).
 
 **Primitives provided by KeiSeiKit:**
-- `_primitives/provision-hetzner.sh` — wrapper around `hcloud` CLI, idempotent create/destroy, checks existing server by name first.
+- `kei-provision hetzner` — unified Rust provisioner over the `hcloud` CLI, idempotent create/destroy, checks existing server by name first.
 - Complement with `_primitives/harden-base.sh` run over SSH after first boot.
 
 **Forbidden:** hcloud token in `.tf` or `.tfvars` committed to git; Cloud Firewall with port 22 open to `0.0.0.0/0`; creating servers with `keep_disk = false` then snapshotting (destroys data); using Hetzner Storage Boxes for anything needing low latency (they're SFTP-over-WAN).

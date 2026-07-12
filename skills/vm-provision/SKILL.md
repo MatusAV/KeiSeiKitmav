@@ -130,6 +130,6 @@ Artifacts:     <terraform state path | cloud-init.yaml path>
 - `_blocks/security-tls-caddy.md` — TLS (Phase 6 handoff)
 - `_blocks/security-audit-logging.md` — auditd baseline (Phase 4)
 - `_blocks/security-patching.md` — unattended-upgrades (Phase 4)
-- `_primitives/provision-hetzner.sh` · `_primitives/provision-vultr.sh` — provisioners (Phase 3)
+- `kei-provision <hetzner|vultr>` — unified Rust provisioner (Phase 3)
 - `_primitives/harden-base.sh` — hardening script (Phase 4)
 - `_primitives/_rust/ssh-check/` · `_primitives/_rust/firewall-diff/` — verify gate (Phase 5)
