@@ -164,3 +164,15 @@ jobs:
         run: PATH="${HOME}/.local/bin:${PATH}" bash scripts/lint-workflows.sh
       - name: Validate pinned SHAs
         run: bash scripts/validate-workflow-shas.sh
+
+  repo-ssot:
+    # Guards SSOT drift that has already shipped: the 3 plugin.json copies
+    # (version+description parity, v0.64.2 #2) and stray member Cargo.lock
+    # files in the Rust workspace. Fast (<10s), no build.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+      - name: Install jq
+        run: sudo apt-get update && sudo apt-get install -y jq
+      - name: Check repo SSOT invariants
+        run: sh scripts/check-repo-ssot.sh
