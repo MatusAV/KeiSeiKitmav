@@ -4,6 +4,20 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
+- **feat(kei-search-core): live Anthropic web-search fetcher** — `kei-search-core`
+  shipped with only a no-op `StubFetcher`, so the research pipeline returned zero
+  sources in production. Added `AnthropicFetcher`, a `SourceFetcher` that calls
+  the Messages API (`POST /v1/messages`) with the server-side `web_search`
+  tool (`web_search_20260209`, model `claude-opus-4-8`) and harvests the
+  returned `web_search_result` items — enriched with citation snippets, deduped
+  by URL, rank-scored — into `Source`s, with a token+search cost estimate in
+  microcents. **Opt-in via `ANTHROPIC_API_KEY`** (RULE 0.8 — secret via env, not
+  a flag); `kei-search-core run` uses it when the key is set and falls back to
+  the stub otherwise. Tunables: `KEI_SEARCH_MODEL`, `KEI_SEARCH_MAX_USES`. Raw
+  HTTP over the already-vendored `reqwest` (blocking; no new dependency — only
+  the `blocking` feature is unioned in). Response parsing is factored into pure
+  functions covered by 5 offline unit tests (no live API call in CI).
+
 - **test: smoke tests for the last 3 untested crates** — `kei-graph-export`,
   `kei-ping`, `kei-tlog` were the only workspace crates with zero tests. Added
   focused smoke coverage: in-crate unit tests for the pure helpers of the two
