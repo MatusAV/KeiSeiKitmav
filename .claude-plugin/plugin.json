@@ -1,13 +1,16 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin.json",
   "name": "keisei",
-  "version": "0.38.0",
-  "description": "Constructor-Pattern agent substrate for Claude Code: agent manifests, portable skills, hooks, Rust workspace primitives (installable via MANIFEST.toml profiles through classic ./install.sh), typed artifact handoff, sleep-sync cloud consolidation, MCP server layer.",
+  "displayName": "KeiSei",
+  "description": "Constructor Pattern multi-LLM agent substrate — 37 agents, 52 skills, 53 hooks, 83 blocks. Cross-CLI policy enforcement (Claude/Grok/Copilot/Agy/Kimi) via kei-mcp + kei_bash/kei_edit/kei_write. Rust primitives via classic ./install.sh.",
+  "version": "0.64.2",
+  "homepage": "https://keilab.io",
+  "repository": "https://github.com/KeiSeiLab/KeiSeiKit.git",
   "author": {
-    "name": "Denis Parfionovich",
-    "url": "https://github.com/KeiSeiLab"
+    "name": "KeiSei LLC",
+    "email": "hello@keilab.io",
+    "url": "https://keilab.io"
   },
-  "homepage": "https://github.com/KeiSeiLab/KeiSeiKit",
-  "repository": "https://github.com/KeiSeiLab/KeiSeiKit",
   "license": "Apache-2.0",
   "keywords": [
     "constructor-pattern",
