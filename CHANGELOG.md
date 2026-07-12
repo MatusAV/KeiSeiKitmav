@@ -4,6 +4,18 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
+(none — v0.65.0 just shipped)
+
+---
+
+## v0.65.0 — 2026-07-12
+
+Repo-consistency + convergence cut. Two quality changes accumulated since
+v0.64.2: a CI-enforced SSOT guard, and completion of the v0.24 provisioner
+unification (the back-compat shell shims are removed — a mild breaking change
+for anything that called `provision-hetzner.sh` / `provision-vultr.sh`
+directly; use `kei-provision <backend>`).
+
 Provisioner unification completed (v0.24 convergence item, finished):
 
 - **`kei-provision` is now the sole VPS provisioner** — the back-compat shims
