@@ -4,6 +4,15 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
+- **fix(kei-search-core): `export` now includes sources** — `export.rs` only ever
+  queried the `claims` table, so `kei-search-core export <id>` (md/json) silently
+  omitted the fetched sources even though the pipeline persists them (a leftover
+  from the stub era). Added `ResearchStore::sources_for` (ordered by relevance)
+  and a `## Sources` section to the Markdown export (`[score] [title](url) — domain`,
+  `_(none)_` when empty) plus a `sources` array to the JSON export. Verified live:
+  a real run captured 10 web-search sources that were previously invisible via the
+  CLI. 3 new unit tests.
+
 - **feat(kei-search-core): live Anthropic web-search fetcher** — `kei-search-core`
   shipped with only a no-op `StubFetcher`, so the research pipeline returned zero
   sources in production. Added `AnthropicFetcher`, a `SourceFetcher` that calls
