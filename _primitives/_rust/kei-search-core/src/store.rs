@@ -119,4 +119,23 @@ impl ResearchStore {
         for r in rows { out.push(r?); }
         Ok(out)
     }
+
+    pub fn sources_for(&self, research_id: i64) -> Result<Vec<Source>> {
+        let mut stmt = self.conn.prepare(
+            "SELECT id, research_id, url, title, content, provider,
+                    domain, relevance_score, created_at
+             FROM sources WHERE research_id=?1
+             ORDER BY relevance_score DESC, id ASC",
+        )?;
+        let rows = stmt.query_map(params![research_id], |r| {
+            Ok(Source {
+                id: r.get(0)?, research_id: r.get(1)?, url: r.get(2)?,
+                title: r.get(3)?, content: r.get(4)?, provider: r.get(5)?,
+                domain: r.get(6)?, relevance_score: r.get(7)?, created_at: r.get(8)?,
+            })
+        })?;
+        let mut out = Vec::new();
+        for r in rows { out.push(r?); }
+        Ok(out)
+    }
 }
