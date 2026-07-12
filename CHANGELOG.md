@@ -4,7 +4,15 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.65.0 just shipped)
+- **fix(test): de-flake `kei-watch::rapid_modifies_are_debounced`** — the test
+  asserted `start.elapsed() < 50ms` on its own 5-write loop, which measured the
+  (loaded CI) test harness rather than the debouncer and intermittently failed
+  `rust-primitives`, forcing release reruns. Dropped that wall-clock assertion
+  (and the now-unused `Instant` import) and relaxed the event-count check from
+  `≤2` to `<5` — i.e. assert only that debounce *coalesced* the burst, since the
+  exact count depends on non-portable OS watch-event delivery timing. The precise
+  `DEBOUNCE_WINDOW` behaviour stays covered deterministically by the unit tests
+  in `src/debounce.rs`. Verified 15/15 stable locally.
 
 ---
 
