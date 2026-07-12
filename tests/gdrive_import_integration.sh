@@ -50,8 +50,8 @@ materialise_fake_home() {
 RCLONE_CONFIG=$h/.config/rclone/rclone.conf
 KEI_DRIVE_REMOTE=mockdrive
 KEI_FORGEJO_USER=tester
-KEI_FORGEJO_TOKEN=fake-token-for-tests
-KEI_FORGEJO_URL=http://127.0.0.1:${MOCK_FORGEJO_PORT:-3001}
+FORGEJO_TOKEN=fake-token-for-tests
+FORGEJO_URL=http://127.0.0.1:${MOCK_FORGEJO_PORT:-3001}
 EOF
 }
 

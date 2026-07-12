@@ -19,15 +19,15 @@ set -e
 substrate_core_binaries() {
   printf '%s\n' \
     kei-fork kei-ledger kei-spawn kei-agent-runtime \
-    kei-capability kei-pet kei-shared kei-store kei-memory \
+    kei-capability kei-pet kei-store kei-memory \
     kei-pipe kei-cache kei-replay kei-runtime \
-    kei-atom-discovery kei-task kei-search-core \
+    kei-task kei-search-core \
     kei-content-store kei-router kei-sage kei-curator \
     kei-auth kei-artifact keisei \
     kei-conflict-scan kei-refactor-engine kei-graph-check \
     kei-diff kei-scheduler kei-watch kei-prune kei-discover \
     kei-brain-view kei-hibernate kei-ledger-sign kei-dna-index \
-    kei-entity-store kei-crossdomain kei-social-store \
+    kei-crossdomain kei-social-store \
     kei-chat-store kei-provision kei-changelog kei-migrate \
     kei-db-contract \
     frustration-matrix \

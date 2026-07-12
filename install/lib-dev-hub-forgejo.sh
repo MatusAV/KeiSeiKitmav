@@ -91,7 +91,7 @@ _dhf_print_banner() {
 # `forgejo admin user list`; on empty DB, creates one admin with random
 # password + access token, stashes both in macOS Keychain (services
 # `forgejo-admin-password` + `forgejo-api-token`), and stamps
-# `~/.claude/secrets/.env` with KEI_FORGEJO_USER + KEI_FORGEJO_URL.
+# `~/.claude/secrets/.env` with KEI_FORGEJO_USER + FORGEJO_URL.
 # Re-runs are no-ops. Returns 0 even if Keychain stash skipped (Linux).
 _dhf_bootstrap_admin_user() {
   local config username user_count password output token kc env_file
@@ -155,11 +155,14 @@ _dhf_bootstrap_admin_user() {
     # Fallback — write to env file with chmod 600. NEVER stderr.
     [ -d "$(dirname "$_env_file")" ] || mkdir -p "$(dirname "$_env_file")"
     [ -f "$_env_file" ] || { touch "$_env_file"; chmod 600 "$_env_file"; }
-    # Replace any previous KEI_FORGEJO_PASSWORD / KEI_FORGEJO_TOKEN lines.
+    # Replace any previous KEI_FORGEJO_PASSWORD / FORGEJO_TOKEN lines.
+    # NOTE: token key is FORGEJO_TOKEN (no KEI_ prefix) — that's the literal
+    # name kei-git-forgejo's ForgejoClient::from_env() reads via
+    # std::env::var("FORGEJO_TOKEN"), with no fallback if it's absent.
     {
-      grep -vE '^(KEI_FORGEJO_PASSWORD|KEI_FORGEJO_TOKEN)=' "$_env_file" 2>/dev/null || true
+      grep -vE '^(KEI_FORGEJO_PASSWORD|FORGEJO_TOKEN)=' "$_env_file" 2>/dev/null || true
       printf 'KEI_FORGEJO_PASSWORD=%s\n' "$password"
-      printf 'KEI_FORGEJO_TOKEN=%s\n'    "$token"
+      printf 'FORGEJO_TOKEN=%s\n'        "$token"
     } > "$_env_file.tmp" && mv "$_env_file.tmp" "$_env_file"
     chmod 600 "$_env_file"
     _stashed_in="$_env_file (chmod 600)"
@@ -176,10 +179,10 @@ _dhf_bootstrap_admin_user() {
       echo ""
       echo "# dev-hub-forgejo bootstrap (auto-added)"
       echo "KEI_FORGEJO_USER=$username"
-      echo "KEI_FORGEJO_URL=http://127.0.0.1:3001"
+      echo "FORGEJO_URL=http://127.0.0.1:3001"
     } >> "$env_file"
     chmod 600 "$env_file"
-    say "  → .env stamped with KEI_FORGEJO_USER + KEI_FORGEJO_URL"
+    say "  → .env stamped with KEI_FORGEJO_USER + FORGEJO_URL"
   fi
 }
 
