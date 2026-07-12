@@ -96,7 +96,10 @@ check_ledger_schema() {
 [ "$QUIET" = "1" ] || printf '%skei-doctor%s — substrate health check\n' "$DIM" "$CL"
 
 _section "substrate binaries on PATH"
-for b in kei-fork kei-ledger kei-spawn kei-agent-runtime kei-capability kei-pet kei-shared; do
+# kei-shared is intentionally excluded: it's a lib-only crate (no [[bin]]
+# target), so cargo never produces a kei-shared executable and this check
+# would permanently FAIL regardless of build health.
+for b in kei-fork kei-ledger kei-spawn kei-agent-runtime kei-capability kei-pet; do
   check_path_binary "$b"
 done
 
