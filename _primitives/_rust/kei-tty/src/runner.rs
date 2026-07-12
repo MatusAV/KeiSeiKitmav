@@ -19,7 +19,10 @@ pub async fn run<B: Backend>(
     daemon_url: String,
     token: String,
     user_id: String,
-) -> Result<()> {
+) -> Result<()>
+where
+    B::Error: std::error::Error + Send + Sync + 'static,
+{
     let mut app = App::new();
     let (tx, mut rx) = mpsc::unbounded_channel::<ChatEvent>();
     let mut keys = EventStream::new();
