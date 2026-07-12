@@ -20,7 +20,7 @@ write_installed() {
 
 # --- per-primitive install/remove ----------------------------------------
 copy_shell_primitive() {
-  local name="$1" file src dst
+  local name="$1" file src dst bin_dir link
   file="$(primitive_field "$name" file)"
   [ -n "$file" ] || { err "no 'file' for shell primitive $name"; return 1; }
   src="$KIT_DIR/_primitives/$file"
@@ -29,25 +29,43 @@ copy_shell_primitive() {
   mkdir -p "$AGENTS_DIR/_primitives"
   cp -f "$src" "$dst"
   chmod +x "$dst"
+  # v0.64 fix: shell primitives are CLI tools (kei-doctor, tomd, harden-base,
+  # provision-*), but the copy above lands in ~/.claude/agents/_primitives/
+  # which is NOT on PATH — so `kei-doctor` was unresolvable despite the
+  # post-install banner advertising it. Symlink onto PATH under the bare
+  # primitive name (no .sh) into ~/.claude/bin (PATH-wired by lib-pathway.sh).
+  # Never clobber a real file (the `kei`/`keisei` entry-points): only create
+  # or replace our own symlink.
+  bin_dir="${HOME_DIR:-$HOME}/.claude/bin"
+  link="$bin_dir/$name"
+  mkdir -p "$bin_dir"
+  if [ ! -e "$link" ] || [ -L "$link" ]; then
+    ln -sf "$dst" "$link"
+  else
+    warn "  $name: $link exists and is not a symlink — leaving PATH entry untouched"
+  fi
   say "  + shell: ${KEI_BLUE:-}$name${KEI_RST:-} ($file)"
 }
 
 remove_shell_primitive() {
-  local name="$1" file
+  local name="$1" file link
   file="$(primitive_field "$name" file)"
   [ -n "$file" ] || return 0
   rm -f "$AGENTS_DIR/_primitives/$file"
+  # Drop the PATH symlink too — but only if it is our symlink, never a file.
+  link="${HOME_DIR:-$HOME}/.claude/bin/$name"
+  [ -L "$link" ] && rm -f "$link"
   say "  - shell: $name ($file)"
 }
 
-copy_rust_primitive() {
-  local name="$1" crate src dst_root dst sibling
-  crate="$(primitive_field "$name" crate)"
-  [ -n "$crate" ] || { err "no 'crate' for rust primitive $name"; return 1; }
+# Copy one crate's source tree (Cargo.toml + src + tests + sibling data dirs)
+# from the kit into the scoped workspace. No manifest stamping, no say().
+# Returns 1 if the source crate dir is missing.
+_copy_crate_tree() {
+  local crate="$1" src dst sibling
   src="$KIT_DIR/_primitives/_rust/$crate"
   [ -d "$src" ] || { err "source missing: $src"; return 1; }
-  dst_root="$AGENTS_DIR/_primitives/_rust"
-  dst="$dst_root/$crate"
+  dst="$AGENTS_DIR/_primitives/_rust/$crate"
   mkdir -p "$dst/src"
   cp -f "$src/Cargo.toml" "$dst/Cargo.toml"
   [ -d "$src/src" ] && cp -rf "$src/src/"* "$dst/src/" 2>/dev/null || true
@@ -66,6 +84,46 @@ copy_rust_primitive() {
       cp -rf "$src/$sibling/"* "$dst/$sibling/" 2>/dev/null || true
     fi
   done
+}
+
+# Echo the full transitive closure of `path = "../<crate>"` dependencies for
+# $1 (excluding $1 itself), one crate per line, deduped. BFS over the kit's
+# source Cargo.toml manifests. Cycle-safe via the `visited` accumulator.
+_rust_transitive_path_deps() {
+  local queue="$1" visited=" $1 " cur src dep out=""
+  while [ -n "$queue" ]; do
+    cur="${queue%% *}"
+    if [ "$queue" = "$cur" ]; then queue=""; else queue="${queue#* }"; fi
+    [ -z "$cur" ] && continue   # empty token from a leading space — skip, no crate lost
+    src="$KIT_DIR/_primitives/_rust/$cur/Cargo.toml"
+    [ -f "$src" ] || continue
+    # `path *= *` tolerates non-canonical spacing in hand-edited manifests.
+    while IFS= read -r dep; do
+      [ -z "$dep" ] && continue
+      case "$visited" in *" $dep "*) continue ;; esac
+      visited="$visited$dep "
+      queue="$queue $dep"
+      out="$out $dep"
+    done < <(grep -oE 'path *= *"\.\./[A-Za-z0-9_-]+"' "$src" | sed -E 's@.*\.\./@@; s@"@@')
+  done
+  printf '%s\n' $out
+}
+
+copy_rust_primitive() {
+  local name="$1" crate dep
+  crate="$(primitive_field "$name" crate)"
+  [ -n "$crate" ] || { err "no 'crate' for rust primitive $name"; return 1; }
+  _copy_crate_tree "$crate" || return 1
+  # v0.64 fix: the scoped workspace lists this crate as a `members = [...]`
+  # entry, so cargo must resolve every `path = "../kei-foo"` dependency at
+  # manifest-parse time. Those sibling crates are often NOT installed
+  # primitives themselves (e.g. kei-atom-discovery, kei-dna-index, kei-model),
+  # so without this the workspace fails to load and the substrate build dies
+  # silently (target/release stays empty). Copy the full transitive closure.
+  while IFS= read -r dep; do
+    [ -z "$dep" ] && continue
+    _copy_crate_tree "$dep" || warn "  path-dep $dep of $crate missing in source"
+  done < <(_rust_transitive_path_deps "$crate")
   say "  + rust:  ${KEI_BLUE:-}$name${KEI_RST:-} (crate $crate)"
 }
 

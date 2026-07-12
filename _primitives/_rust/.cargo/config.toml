@@ -1,7 +1,25 @@
-[target.x86_64-unknown-linux-gnu]
-linker = "clang"
-rustflags = ["-C", "link-arg=-fuse-ld=mold"]
-
-[target.aarch64-unknown-linux-gnu]
-linker = "clang"
-rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+# Cargo linker configuration for the keisei workspace.
+#
+# ACTIVE CONFIG: no linker override.
+# Cargo uses the platform default (gcc/cc on Linux, Xcode linker on macOS).
+# A stock toolchain with only gcc/cc present is sufficient — no extra tools
+# are required.  This is intentional: fresh installs and CI must never fail
+# because clang or mold is absent.
+#
+# OPT-IN: faster incremental links with clang + mold
+# ---------------------------------------------------
+# Install prerequisites:
+#   sudo apt install clang mold        # Debian/Ubuntu
+#   brew install llvm molten-ld        # macOS (use lld instead of mold)
+#
+# Then uncomment the block(s) below that match your host target.
+# Do NOT commit the uncommented version — keep this file tool-agnostic
+# so CI and other developers are never broken by a missing linker.
+#
+# [target.x86_64-unknown-linux-gnu]
+# linker = "clang"
+# rustflags = ["-C", "link-arg=-fuse-ld=mold"]
+#
+# [target.aarch64-unknown-linux-gnu]
+# linker = "clang"
+# rustflags = ["-C", "link-arg=-fuse-ld=mold"]
