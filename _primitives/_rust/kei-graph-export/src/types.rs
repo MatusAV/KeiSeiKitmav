@@ -52,3 +52,41 @@ pub fn truncate_chars(s: &str, max: usize) -> &str {
     let end = s.char_indices().nth(max).map(|(i, _)| i).unwrap_or(s.len());
     &s[..end]
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn sanitize_id_replaces_disallowed_and_keeps_allowed() {
+        // space, '!', '#' -> '_'; alphanumerics and -_:/. survive as-is.
+        assert_eq!(sanitize_id("a b!c"), "a_b_c");
+        assert_eq!(sanitize_id("ok-id_1:2/3.v"), "ok-id_1:2/3.v");
+        assert_eq!(sanitize_id("we#ird space"), "we_ird_space");
+        // Unicode alphanumerics are kept (char::is_alphanumeric).
+        assert_eq!(sanitize_id("café"), "café");
+    }
+
+    #[test]
+    fn dna_prefix_truncates_to_30_then_sanitizes() {
+        // short input: only sanitized, not truncated
+        assert_eq!(dna_prefix("abc def"), "abc_def");
+        // >30 chars: cut to the first 30 (all sanitized)
+        let long = "0123456789012345678901234567890123456789"; // 40 chars
+        let out = dna_prefix(long);
+        assert_eq!(out.chars().count(), 30);
+        assert_eq!(out, "012345678901234567890123456789");
+    }
+
+    #[test]
+    fn truncate_chars_is_char_boundary_safe() {
+        assert_eq!(truncate_chars("hello", 3), "hel");
+        // shorter than max -> unchanged
+        assert_eq!(truncate_chars("hi", 5), "hi");
+        assert_eq!(truncate_chars("", 3), "");
+        // multi-byte chars: must cut on a char boundary, never panic
+        let out = truncate_chars("héllo", 3); // 'é' is 2 bytes
+        assert_eq!(out, "hél");
+        assert_eq!(out.chars().count(), 3);
+    }
+}
