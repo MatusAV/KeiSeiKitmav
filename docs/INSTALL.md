@@ -23,7 +23,7 @@ Complete install guide. Quick-start lives in the main [README](../README.md#inst
 
 - **pandoc** — `tomd` uses it for `.docx` / `.pptx` / `.html` (needed for `core` / `full` profile)
 - **sqlite3 CLI** — optional for manual DB inspection of `kei-ledger` / `kei-migrate` (their binaries embed SQLite via `rusqlite`; `ops` / `dev` profile)
-- **hcloud / vultr-cli** — wrapped by `provision-hetzner` / `provision-vultr` (`ops` profile)
+- **hcloud / vultr-cli** — wrapped by `kei-provision` (`ops` profile)
 - **yq v4** (mikefarah/yq Go impl) — required by `kei-ci-lint` (`dev` profile)
 
 `install.sh` checks only the deps relevant to the selected profile and soft-warns once per missing tool.
@@ -72,7 +72,7 @@ By default `./install.sh` is **minimal** — agents + hooks + skills + bridges, 
 |---|---|---|---|
 | `minimal` (default) | none | ~5s | ~2 MB |
 | `core` | `tomd` | ~5s | ~2 MB |
-| `ops` | 9 infra tools: `kei-ledger`, `ssh-check`, `firewall-diff`, `provision-hetzner`, `provision-vultr`, `harden-base`, `metrics-scrape`, `log-ship`, `kei-provision` | ~90s | ~55 MB |
+| `ops` | 7 infra tools: `kei-ledger`, `ssh-check`, `firewall-diff`, `harden-base`, `metrics-scrape`, `log-ship`, `kei-provision` | ~90s | ~55 MB |
 | `dev` | 17 dev tools: `kei-migrate`, `kei-changelog`, `kei-ci-lint`, `kei-docs-scaffold`, `kei-memory`, `kei-conflict-scan`, `kei-refactor-engine`, `kei-graph-check`, `kei-store`, `kei-artifact`, `kei-agent-runtime`, `kei-capability`, `kei-entity-store`, `kei-pipe`, `kei-cache`, `kei-spawn`, `kei-replay` | ~90s | ~60 MB |
 | `full` | everything in `MANIFEST.toml` `full` profile (46 primitives — see manifest for exact list; the v0.29 → v0.33 additions `kei-diff`, `kei-scheduler`, `kei-watch`, `kei-prune`, `kei-discover`, `kei-brain-view`, `kei-hibernate`, `kei-ledger-sign`, `kei-dna-index`, `kei-fork`, `kei-shared` ship as sources only, not in any profile yet) | ~6 min | ~220 MB |
 
@@ -211,7 +211,7 @@ Interactive wizard: run `/hooks-control` — click-only picker that shows curren
 | Hooks (PreToolUse / PostToolUse) | 11 | `assemble-agents`, `assemble-validate`, `no-hand-edit-agents`, `tomd-preread`, `agent-fork-logger`, `orchestrator-dirty-check`, `session-end-dump`, `milestone-commit-hook`, `error-spike-detector`, `agent-capability-check`, `agent-capability-verify` |
 | Portable skills | 35 | `compose-solution`, `new-agent`, `new-project`, `schema-design`, `observability-setup`, `auth-setup`, `api-design`, `ci-scaffold`, `test-matrix`, `docs-scaffold`, `vm-provision`, ... |
 | Primitives (Rust crates, opt-in) | 44 | `kei-ledger`, `kei-migrate`, `kei-changelog`, `ssh-check`, `firewall-diff`, `kei-memory`, `kei-conflict-scan`, `kei-refactor-engine`, `kei-graph-check`, `kei-store`, `kei-router`, `kei-sage`, `kei-task`, `kei-chat-store`, `kei-crossdomain`, `kei-search-core`, `kei-content-store`, `kei-social-store`, `kei-curator`, `kei-auth`, `kei-artifact`, `keisei`, `kei-agent-runtime`, `kei-capability`, `kei-provision`, `kei-entity-store`, `kei-pipe`, `kei-cache`, `kei-spawn`, `kei-replay`, `kei-atom-discovery`, `kei-forge`, `kei-runtime`, `kei-diff`, `kei-scheduler`, `kei-watch`, `kei-prune`, `kei-discover`, `kei-brain-view`, `kei-hibernate`, `kei-ledger-sign`, `kei-dna-index`, `kei-fork`, `kei-shared` |
-| Primitives (shell, opt-in via profile) | 8 | `tomd`, `metrics-scrape`, `log-ship`, `provision-hetzner`, `provision-vultr`, `harden-base`, `kei-ci-lint`, `kei-docs-scaffold` |
+| Primitives (shell, opt-in via profile) | 6 | `tomd`, `metrics-scrape`, `log-ship`, `harden-base`, `kei-ci-lint`, `kei-docs-scaffold` |
 | Shell helpers (always copied) | 3 | `kei-sleep-setup`, `kei-sleep-sync`, `kei-sleep-queue` (dormant until you run `/sleep-setup`) |
 | Cross-tool bridges | 11 | Cursor legacy/MDC, Codex, Copilot, Windsurf, Junie, Continue, Gemini, Aider, Replit |
 

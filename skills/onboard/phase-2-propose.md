@@ -95,7 +95,7 @@ Read `_primitives/MANIFEST.toml` (already on disk). Map scan → primitives:
 - CI detected → `kei-ci-lint` (high confidence)
 - Doc heavy (`docs/`, many `.md`) → `kei-docs-scaffold` (medium)
 - DB migrations (schema files, `migrations/` dir) → `kei-migrate` (high)
-- Ops / VPS → `provision-hetzner`, `provision-vultr`, `harden-base` (ops
+- Ops / VPS → `kei-provision`, `harden-base` (ops
   profile suggestion)
 - Non-native docs (.docx/.xlsx/.pptx) in repo → `tomd` (high)
 

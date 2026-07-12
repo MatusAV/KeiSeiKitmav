@@ -24,12 +24,12 @@ Render once; do not parameterise further — surgical changes only.
 
 Dispatch by `PROVIDER`:
 
-- `hetzner` → `_primitives/provision-hetzner.sh create <VM_NAME> --type <PLAN> --location <REGION> --user-data <run-dir>/cloud-init.yaml`
-- `vultr`   → `_primitives/provision-vultr.sh   create <VM_NAME> --plan <PLAN> --region <REGION> --user-data <run-dir>/cloud-init.yaml`
+- `hetzner` → `kei-provision hetzner create <VM_NAME> --type <PLAN> --location <REGION> --user-data <run-dir>/cloud-init.yaml`
+- `vultr`   → `kei-provision vultr   create <VM_NAME> --type <PLAN> --location <REGION> --user-data <run-dir>/cloud-init.yaml`
 - `digitalocean` / `upcloud` — use each provider's official CLI directly
   (no wrapper primitive yet); CITE the command in the plan before running.
 
-Both primitives are idempotent — a second invocation with the same name
+`kei-provision` is idempotent — a second invocation with the same name
 prints the existing IP and exits 0. Re-runs after a network blip do NOT
 create duplicates.
 
