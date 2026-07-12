@@ -35,6 +35,16 @@ jobs:
       - name: cargo metadata sanity
         shell: bash
         run: cd _primitives/_rust && cargo metadata --no-deps --format-version=1 > /dev/null
+      - name: Repo SSOT invariants (plugin.json parity + workspace lock hygiene)
+        shell: bash
+        run: |
+          if command -v jq >/dev/null 2>&1; then
+            sh scripts/check-repo-ssot.sh
+          else
+            echo "jq not on runner — running workspace lock hygiene only"
+            stray=$(find _primitives/_rust -mindepth 2 -name Cargo.lock -not -path '*/tests/fixtures/*' | grep -v '/kei-model-router/' || true)
+            [ -z "$stray" ] || { echo "stray member Cargo.lock:"; echo "$stray"; exit 1; }
+          fi
 
   # VPS smoke — lightweight check that the backup runner is alive +
   # workspace topology is also valid on Linux. NO heavy compile (VPS

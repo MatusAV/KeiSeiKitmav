@@ -4,7 +4,33 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.64.2 just shipped)
+Tech-debt audit fixes (quality pass, no behaviour change):
+
+- **`scripts/check-repo-ssot.sh` — SSOT drift guard, wired into CI** — enforces
+  the invariant that the 3 tracked `plugin.json` copies (root, `.claude-plugin/`,
+  `.claude/`) share an identical `version` **and** `description`, the class of
+  drift that shipped in v0.64.2 (#2) where a stale copy carried an old version
+  after a manual re-sync. Also checks marketplace-manifest version parity and
+  workspace lock hygiene (see below). Runs as a new `repo-ssot` job on GitHub
+  Actions and inside the Forgejo `preflight` job. Asset-count accuracy is
+  intentionally **not** enforced — `hooks`/`skills` lack a single mechanical
+  SSOT, so a count assertion would be flaky; the 3-copy parity check is the
+  robust invariant.
+- **remove 6 stray member `Cargo.lock`** — `kei-brain-view`, `kei-discover`,
+  `kei-fork`, `kei-hibernate`, `kei-migrate`, `kei-shared` are all members of the
+  `_primitives/_rust` workspace, which resolves against the single root lock;
+  their crate-level `Cargo.lock` files were dead cruft that could silently drift
+  from the real graph. Only `kei-model-router` (in the workspace `exclude` list)
+  legitimately keeps its own lock. `check-repo-ssot.sh` now guards against
+  regressions.
+- **README: drop stale `(v0.63.0)` from the "By the numbers" header** — the
+  version-in-a-section-header was a drift vector; the counts themselves are
+  accurate (`_blocks/*.md` minus README/INDEX = 83 per `build-index.sh`,
+  37 manifests, 52 skill dirs).
+- **`kei-search-core`: correct a stale `TODO(v0.15)`** — the no-op `StubFetcher`
+  comment promised wiring "per v0.14 spec" for v0.15 (now v0.64); reworded to
+  match the honest module docs (the crate is a deliberate future scaffold;
+  `/research` does not depend on it).
 
 ---
 

@@ -25,7 +25,11 @@ pub struct StubFetcher;
 
 impl SourceFetcher for StubFetcher {
     fn fetch(&self, _claim: &str) -> (Vec<Source>, i64) {
-        // TODO(v0.15): wire to real websearch. Kept as stub per v0.14 spec.
+        // Deliberate no-op: this crate ships the frozen `SourceFetcher`
+        // interface + research pipeline, but no live web provider is wired
+        // yet (see module docs — `/research` uses Claude Code's built-in
+        // WebFetch/WebSearch and does NOT depend on this crate). Real
+        // providers (anthropic-websearch / SerpAPI / Brave) plug in here.
         (Vec::new(), 0)
     }
 }
