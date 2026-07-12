@@ -7,6 +7,9 @@ description = "Pet persona manifest: pet.toml parse, validate, system-prompt ove
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-pet"
 path = "src/bin/kei-pet.rs"

@@ -7,6 +7,9 @@ description = "Ratatui-based terminal UI client for the kei-cortex daemon"
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-tty"
 path = "src/main.rs"

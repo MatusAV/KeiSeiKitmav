@@ -19,6 +19,9 @@ license.workspace = true
 # purely to keep the default build lean (each pulls a distinct SDK + TLS
 # stack). WhatsApp / Signal are unimplemented — no adapter crate exists yet.
 
+
+[lints]
+workspace = true
 [features]
 default = ["cli"]
 cli = []

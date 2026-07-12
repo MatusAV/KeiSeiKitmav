@@ -7,6 +7,9 @@ description = "GitBackend impl for public Forgejo (Gitea-compatible /api/v1). Wa
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_git_forgejo"
 path = "src/lib.rs"

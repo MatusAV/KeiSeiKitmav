@@ -7,6 +7,9 @@ description = "NetworkMode impl for OpenVPN — systemctl start/stop openvpn-ser
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_net_openvpn"
 path = "src/lib.rs"

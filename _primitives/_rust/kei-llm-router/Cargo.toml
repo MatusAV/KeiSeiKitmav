@@ -7,6 +7,9 @@ description = "Wave 60 — UNIVERSAL local-LLM backend selector. Glues W55-W59 (
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-llm-router"
 path = "src/main.rs"

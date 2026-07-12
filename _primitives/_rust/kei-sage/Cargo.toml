@@ -7,6 +7,9 @@ description = "Obsidian-style knowledge graph (SQLite + FTS5). Port of LBM inter
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-sage"
 path = "src/main.rs"

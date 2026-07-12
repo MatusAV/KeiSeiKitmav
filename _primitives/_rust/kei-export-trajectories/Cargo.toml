@@ -9,6 +9,9 @@ license.workspace = true
 # Constructor Pattern: a thin binary on top of a thin library so tests can
 # drive the same code-paths the CLI does without re-implementing them.
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-export-trajectories"
 path = "src/main.rs"

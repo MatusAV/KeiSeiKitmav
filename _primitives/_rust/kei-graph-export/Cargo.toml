@@ -7,6 +7,9 @@ description = "Export KeiSei registry + ledger as D3 graph space fragment"
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-graph-export"
 path = "src/main.rs"

@@ -7,6 +7,9 @@ description = "Thin client for Google People API. Consumes an access_token from 
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_contacts_google"
 path = "src/lib.rs"

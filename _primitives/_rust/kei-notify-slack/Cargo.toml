@@ -7,6 +7,9 @@ description = "Slack incoming-webhook NotifyChannel impl for kei-runtime-core (W
 license.workspace = true
 authors.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_notify_slack"
 path = "src/lib.rs"

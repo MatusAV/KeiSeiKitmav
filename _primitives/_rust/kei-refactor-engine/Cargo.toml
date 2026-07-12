@@ -7,6 +7,9 @@ description = "Deep-sleep refactor-plan generator (consumes kei-conflict-scan JS
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-refactor-engine"
 path = "src/main.rs"

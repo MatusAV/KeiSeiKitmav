@@ -7,6 +7,9 @@ description = "Universal model registry + selector. SSoT TOML catalog of LLM mod
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_model"
 path = "src/lib.rs"

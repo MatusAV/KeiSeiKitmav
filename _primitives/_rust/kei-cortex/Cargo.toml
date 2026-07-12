@@ -7,6 +7,9 @@ description = "Local HTTP daemon exposing cortex state for UI consumption"
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-cortex"
 path = "src/main.rs"

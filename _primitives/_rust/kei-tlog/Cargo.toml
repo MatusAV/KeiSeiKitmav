@@ -7,6 +7,9 @@ description = "RULE 0.17 — atomar time-logger for agents and pipelines. Emits 
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-tlog"
 path = "src/main.rs"

@@ -7,6 +7,9 @@ description = "NotifyChannel impl for Telegram Bot API (sendMessage with HTML pa
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_notify_telegram"
 path = "src/lib.rs"

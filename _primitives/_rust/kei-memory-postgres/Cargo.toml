@@ -7,6 +7,9 @@ description = "MemoryBackend impl over PostgreSQL (tokio-postgres) for kei-runti
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_memory_postgres"
 path = "src/lib.rs"

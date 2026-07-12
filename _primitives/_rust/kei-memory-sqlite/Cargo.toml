@@ -7,6 +7,9 @@ description = "MemoryBackend impl over SQLite (rusqlite bundled). Wave 6 atomar.
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_memory_sqlite"
 path = "src/lib.rs"

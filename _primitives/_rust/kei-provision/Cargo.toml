@@ -7,6 +7,9 @@ description = "Unified VPS provisioner — one CLI for Vultr / Linode / DigitalO
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-provision"
 path = "src/main.rs"

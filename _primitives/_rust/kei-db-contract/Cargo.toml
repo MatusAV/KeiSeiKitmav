@@ -7,6 +7,9 @@ rust-version.workspace = true
 license.workspace = true
 description = "Diff SQL migration schemas against TypeScript type declarations to catch frontend ↔ DB drift."
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_db_contract"
 path = "src/lib.rs"

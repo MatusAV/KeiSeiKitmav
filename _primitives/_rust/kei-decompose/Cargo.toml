@@ -7,6 +7,9 @@ description = "Universal decomposition layer — turns ANY MD output (research /
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-decompose"
 path = "src/main.rs"

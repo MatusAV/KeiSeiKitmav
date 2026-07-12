@@ -7,6 +7,9 @@ description = "People + interaction CRM (lite). Port of LBM internal/social."
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-social-store"
 path = "src/main.rs"

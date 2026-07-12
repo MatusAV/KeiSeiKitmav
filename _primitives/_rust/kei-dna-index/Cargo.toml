@@ -7,6 +7,9 @@ description = "Read-only adjacency/cluster/precedent index over kei-ledger DNAs"
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-dna-index"
 path = "src/main.rs"

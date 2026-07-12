@@ -7,6 +7,9 @@ description = "Wave 58 — adapter to llama.cpp via shell-out (llama-cli / llama
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-llm-llamacpp"
 path = "src/main.rs"

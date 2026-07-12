@@ -7,6 +7,9 @@ description = "Bitbucket Cloud GitBackend impl for kei-runtime-core (Wave 5). RE
 license.workspace = true
 authors.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_git_bitbucket"
 path = "src/lib.rs"

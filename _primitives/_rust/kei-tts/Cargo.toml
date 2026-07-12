@@ -7,6 +7,9 @@ description = "Text-to-speech abstraction trait with 4 backends (ElevenLabs/Open
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_tts"
 path = "src/lib.rs"

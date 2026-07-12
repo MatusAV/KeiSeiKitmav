@@ -7,6 +7,9 @@ description = "Multi-tenant session tokens with scopes + HMAC-signed expiry (SQL
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-auth"
 path = "src/main.rs"

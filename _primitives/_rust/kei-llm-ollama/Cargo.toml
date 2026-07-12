@@ -7,6 +7,9 @@ description = "HTTP adapter for the Ollama daemon (localhost:11434). Wave 57 of 
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-llm-ollama"
 path = "src/main.rs"

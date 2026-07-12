@@ -7,6 +7,9 @@ description = "Memory-repo backend abstraction — GitHub/Forgejo/Gitea/Filesyst
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-store"
 path = "src/main.rs"

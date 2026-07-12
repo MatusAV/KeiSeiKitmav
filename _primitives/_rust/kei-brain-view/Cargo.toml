@@ -7,6 +7,9 @@ description = "Read-only TUI/CLI visualizer of kei-ledger taxonomy graph + agent
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-brain-view"
 path = "src/main.rs"

@@ -7,6 +7,9 @@ description = "WebAuthn passkey AuthProvider impl for kei-runtime-core (Wave 7 a
 license.workspace = true
 authors.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_auth_webauthn"
 path = "src/lib.rs"

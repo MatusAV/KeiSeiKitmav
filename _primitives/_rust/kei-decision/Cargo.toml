@@ -7,6 +7,9 @@ description = "Linking layer between research output (MASTER-REPORT.md) and deci
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-decision"
 path = "src/main.rs"

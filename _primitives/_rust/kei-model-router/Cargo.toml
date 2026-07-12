@@ -6,6 +6,9 @@ description = "Model selection for Claude Code Agent spawns. Reads providers/mod
 authors = ["KeiSei LLC <hello@keilab.io>", "Denis Parfionovich <parfionovich@keilab.io>"]
 license = "Apache-2.0"
 
+
+[lints]
+workspace = true
 [workspace]
 
 [lib]

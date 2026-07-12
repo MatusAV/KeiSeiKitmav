@@ -7,6 +7,9 @@ description = "Project-folder classifier for one-shot Google Drive → Forgejo i
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_gdrive_import"
 path = "src/lib.rs"

@@ -7,6 +7,9 @@ description = "MemoryBackend impl over sled (embedded key-value store) for kei-r
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_memory_sled"
 path = "src/lib.rs"

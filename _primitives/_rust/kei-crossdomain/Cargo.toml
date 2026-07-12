@@ -7,6 +7,9 @@ description = "Typed-edge cross-domain store. Port of LBM internal/crossdomain."
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-crossdomain"
 path = "src/main.rs"

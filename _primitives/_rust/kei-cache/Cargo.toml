@@ -7,6 +7,9 @@ description = "Atom result cache — deterministic wrapping of pure (query/trans
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-cache"
 path = "src/main.rs"

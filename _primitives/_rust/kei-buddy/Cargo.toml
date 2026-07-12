@@ -7,6 +7,9 @@ description = "KeiBuddy personal-assistant Telegram bot — onboarding state-mac
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-buddy"
 path = "src/bin/kei-buddy.rs"

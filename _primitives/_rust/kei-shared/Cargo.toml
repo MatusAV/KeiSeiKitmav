@@ -7,6 +7,9 @@ description = "Shared substrate types — single source of truth for DNA format 
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_shared"
 path = "src/lib.rs"

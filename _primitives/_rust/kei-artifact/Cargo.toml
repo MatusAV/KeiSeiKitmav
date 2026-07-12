@@ -7,6 +7,9 @@ description = "Typed artifact handoff pipeline — BMAD-style document pass-betw
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-artifact"
 path = "src/main.rs"

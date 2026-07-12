@@ -7,6 +7,9 @@ description = "Metadata primitive — mark unused ledger agents as retired (biol
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_prune"
 path = "src/lib.rs"

@@ -7,6 +7,9 @@ description = "Hook-protocol CLI adapter — routes PreToolUse check + on-return
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-capability"
 path = "src/main.rs"

@@ -7,6 +7,9 @@ description = "Hosted Sleep runtime substrate — 12 traits + DNA + plugin regis
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_runtime_core"
 path = "src/lib.rs"

@@ -7,6 +7,9 @@ description = "Agent substrate v1 — Capability trait + registry + compose/spaw
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-agent-runtime"
 path = "src/main.rs"

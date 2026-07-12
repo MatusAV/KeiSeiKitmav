@@ -7,6 +7,9 @@ description = "Universal block identity layer — generalises agent DNA to any k
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-registry"
 path = "src/main.rs"

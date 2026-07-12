@@ -7,6 +7,9 @@ description = "Sign in with Apple AuthProvider impl for kei-runtime-core (Wave 7
 license.workspace = true
 authors.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_auth_apple"
 path = "src/lib.rs"

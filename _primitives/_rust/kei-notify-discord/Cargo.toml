@@ -7,6 +7,9 @@ description = "NotifyChannel impl for Discord webhooks. Wave 8 atomar; sibling o
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_notify_discord"
 path = "src/lib.rs"

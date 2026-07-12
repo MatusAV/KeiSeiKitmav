@@ -7,6 +7,9 @@ description = "ed25519 signing of ledger rows for creator attestation (RULE 0.12
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-ledger-sign"
 path = "src/main.rs"

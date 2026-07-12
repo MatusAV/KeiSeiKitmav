@@ -7,6 +7,9 @@ description = "Agent fork / done / fail ledger — SQLite-backed, SSoT for RULE 
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-ledger"
 path = "src/main.rs"

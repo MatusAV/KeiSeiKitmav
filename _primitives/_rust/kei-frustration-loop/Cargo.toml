@@ -7,6 +7,9 @@ description = "Per-user frustration learning loop — feedback ingestion + auto-
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_frustration_loop"
 path = "src/lib.rs"

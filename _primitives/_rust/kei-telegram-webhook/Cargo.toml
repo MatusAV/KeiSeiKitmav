@@ -7,6 +7,9 @@ description = "Inbound Telegram Bot API webhook handler — parses Update payloa
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_telegram_webhook"
 path = "src/lib.rs"

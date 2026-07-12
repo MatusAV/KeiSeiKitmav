@@ -7,6 +7,9 @@ description = "Edge-decay + orphan-prune graph hygiene. Port of LBM internal/cur
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-curator"
 path = "src/main.rs"

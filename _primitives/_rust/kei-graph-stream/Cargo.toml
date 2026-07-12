@@ -7,6 +7,9 @@ description = "Tail agent-events.jsonl and stream to browser clients via WebSock
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_graph_stream"
 path = "src/lib.rs"

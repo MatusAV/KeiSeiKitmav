@@ -7,6 +7,9 @@ description = "Vultr Cloud (v2 API) implementation of the kei-runtime-core Compu
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_compute_vultr"
 path = "src/lib.rs"

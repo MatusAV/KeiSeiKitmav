@@ -7,6 +7,9 @@ description = "Asset + prompt + campaign registry. Port of LBM internal/content.
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-content-store"
 path = "src/main.rs"

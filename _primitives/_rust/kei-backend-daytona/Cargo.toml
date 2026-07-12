@@ -7,6 +7,9 @@ description = "Daytona serverless backend with hibernation (HERMES-MIGRATION P1.
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_backend_daytona"
 path = "src/lib.rs"

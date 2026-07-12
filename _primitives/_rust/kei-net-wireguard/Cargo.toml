@@ -7,6 +7,9 @@ description = "Wave 9 — WireGuard NetworkMode adapter via wg-quick + wg shell-
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_net_wireguard"
 path = "src/lib.rs"

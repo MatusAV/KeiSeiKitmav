@@ -7,6 +7,9 @@ description = "Structural JSON diff (RFC 6902 subset: add/remove/replace). Pure 
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_diff"
 path = "src/lib.rs"

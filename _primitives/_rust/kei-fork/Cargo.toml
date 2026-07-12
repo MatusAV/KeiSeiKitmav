@@ -7,6 +7,9 @@ description = "Managed git-worktree + ledger lifecycle for agent spawns (Wave 15
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-fork"
 path = "src/main.rs"

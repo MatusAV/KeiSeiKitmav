@@ -7,6 +7,9 @@ description = "AuthProvider impl for passwordless email magic-link tokens (HMAC-
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_auth_magiclink"
 path = "src/lib.rs"

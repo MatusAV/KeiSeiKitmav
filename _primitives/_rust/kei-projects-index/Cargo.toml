@@ -7,6 +7,9 @@ description = "SQLite index of git-repo state under ~/Projects/. Feeds dev-hub d
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-projects-index"
 path = "src/main.rs"

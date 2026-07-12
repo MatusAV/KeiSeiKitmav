@@ -7,6 +7,9 @@ description = "MemoryBackend trait-impl backed by Redis 7+ (async). Wave 6 atoma
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_memory_redis"
 path = "src/lib.rs"

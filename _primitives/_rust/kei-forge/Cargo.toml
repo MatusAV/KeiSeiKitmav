@@ -7,6 +7,9 @@ description = "Local web wizard for scaffolding new atoms"
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [package.metadata.keisei]
 backend = "none"
 description = "Local web wizard for scaffolding new atoms"

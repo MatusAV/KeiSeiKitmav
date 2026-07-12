@@ -7,6 +7,9 @@ description = "Wave 59 — Apple MLX adapter (mlx_lm shell-out, macOS Apple Sili
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-llm-mlx"
 path = "src/main.rs"

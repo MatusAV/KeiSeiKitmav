@@ -7,6 +7,9 @@ description = "Session retrospective + recurring pattern detector (offline-first
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_memory"
 path = "src/lib.rs"

@@ -6,6 +6,9 @@ description = "Git-cliff-style CHANGELOG.md generator from Conventional Commits.
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-changelog"
 path = "src/main.rs"

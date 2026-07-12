@@ -7,6 +7,9 @@ description = "ComputeProvider impl for user-owned bare-metal boxes — register
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_compute_baremetal"
 path = "src/lib.rs"

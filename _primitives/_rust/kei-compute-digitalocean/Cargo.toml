@@ -7,6 +7,9 @@ description = "DigitalOcean ComputeProvider impl for kei-runtime-core (Wave 2 re
 license.workspace = true
 authors.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_compute_digitalocean"
 path = "src/lib.rs"

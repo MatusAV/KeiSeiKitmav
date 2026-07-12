@@ -7,6 +7,9 @@ description = "Universal parser/canonicalizer/emitter for external AI-coding-too
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-skill-importer"
 path = "src/main.rs"

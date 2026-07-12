@@ -7,6 +7,9 @@ description = "Wave 56 — Mac hardware/OS/tooling capability detector. Foundati
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-machine-probe"
 path = "src/main.rs"

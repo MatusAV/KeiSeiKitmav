@@ -7,6 +7,9 @@ description = "Single source of truth for content protection rules — scanner, 
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-leak-matrix"
 path = "src/main.rs"

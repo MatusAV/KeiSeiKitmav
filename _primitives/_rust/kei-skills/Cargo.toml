@@ -6,6 +6,9 @@ description = "SKILL.md format — parser, validator, fuzzy patcher, loader, hot
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_skills"
 path = "src/lib.rs"

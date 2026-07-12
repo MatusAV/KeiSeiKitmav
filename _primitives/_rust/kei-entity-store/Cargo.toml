@@ -7,6 +7,9 @@ description = "Convergence-Layer-A engine: schema-driven SQLite CRUD + graph ver
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_entity_store"
 path = "src/lib.rs"

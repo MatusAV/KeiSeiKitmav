@@ -7,6 +7,9 @@ description = "Session persistence for Claude conversations. Port of LBM interna
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-chat-store"
 path = "src/main.rs"

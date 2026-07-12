@@ -7,6 +7,9 @@ description = "ComputeProvider impl for Linode (Akamai Cloud) v4 API. Wave 2 ato
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-compute-linode"
 path = "src/main.rs"

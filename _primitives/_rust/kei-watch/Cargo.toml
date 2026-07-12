@@ -7,6 +7,9 @@ description = "Filesystem watcher primitive — thin canonical wrapper around no
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-watch"
 path = "src/main.rs"

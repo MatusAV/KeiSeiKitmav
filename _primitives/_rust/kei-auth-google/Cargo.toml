@@ -7,6 +7,9 @@ description = "AuthProvider impl for Google OAuth 2.0 + OIDC. Wave 7 atomar; sib
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_auth_google"
 path = "src/lib.rs"

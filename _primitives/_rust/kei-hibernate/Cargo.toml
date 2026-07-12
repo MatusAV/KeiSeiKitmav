@@ -7,6 +7,9 @@ description = "Whole-brain export/import — tar.zst bundle of KeiSeiKit state (
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-hibernate"
 path = "src/main.rs"

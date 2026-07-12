@@ -7,6 +7,9 @@ description = "Atom DAG pipe runtime — topo-sorts steps, pipes JSON between at
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-pipe"
 path = "src/main.rs"

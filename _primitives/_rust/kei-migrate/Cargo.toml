@@ -6,6 +6,9 @@ description = "Universal SQL migration runner — Postgres/SQLite/MySQL autodete
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-migrate"
 path = "src/main.rs"

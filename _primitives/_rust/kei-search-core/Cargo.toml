@@ -7,6 +7,9 @@ description = "3-wave deep research scaffolding with budget cap. Port of LBM int
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-search-core"
 path = "src/main.rs"

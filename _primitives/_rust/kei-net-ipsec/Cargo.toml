@@ -7,6 +7,9 @@ description = "Wave 9 — IPsec NetworkMode impl for kei-runtime-core via strong
 license.workspace = true
 authors.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_net_ipsec"
 path = "src/lib.rs"

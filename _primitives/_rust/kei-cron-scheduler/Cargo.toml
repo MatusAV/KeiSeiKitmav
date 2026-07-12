@@ -21,6 +21,9 @@ license.workspace = true
 #   prometheus     — emit metrics from the runner
 #   webhook        — outbound HTTP delivery target
 
+
+[lints]
+workspace = true
 [features]
 default = []
 

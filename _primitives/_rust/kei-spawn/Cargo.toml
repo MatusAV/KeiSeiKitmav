@@ -7,6 +7,9 @@ description = "Agent substrate v1 — automation envelope around prepare + ledge
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-spawn"
 path = "src/main.rs"

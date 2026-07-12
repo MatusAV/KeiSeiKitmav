@@ -7,6 +7,9 @@ description = "Per-LLM-call token + cost observability store. SQLite-backed Toke
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-token-tracker"
 path = "src/bin/kei-token-tracker.rs"

@@ -7,6 +7,9 @@ description = "Speech-to-text abstraction trait with 3 backends (whisper-local/D
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_stt"
 path = "src/lib.rs"

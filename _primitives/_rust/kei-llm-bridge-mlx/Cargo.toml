@@ -7,6 +7,9 @@ description = "LlmBackend trait-bridge wrapping kei-llm-mlx (Wave 59, Apple Sili
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_llm_bridge_mlx"
 path = "src/lib.rs"

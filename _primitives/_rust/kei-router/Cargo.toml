@@ -7,6 +7,9 @@ description = "Routing primitives: (1) NL query → tool-call (LBM port). (2) Mu
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-router"
 path = "src/main.rs"

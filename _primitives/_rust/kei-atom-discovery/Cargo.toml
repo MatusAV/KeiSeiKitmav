@@ -7,6 +7,9 @@ description = "Shared atom discovery + frontmatter parsing + safe path join"
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [lib]
 name = "kei_atom_discovery"
 path = "src/lib.rs"

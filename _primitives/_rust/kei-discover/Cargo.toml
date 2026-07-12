@@ -7,6 +7,9 @@ description = "Wave 14 — federated marketplace discovery stub for KeiSei primi
 authors.workspace = true
 license.workspace = true
 
+
+[lints]
+workspace = true
 [[bin]]
 name = "kei-discover"
 path = "src/main.rs"
