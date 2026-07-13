@@ -83,7 +83,6 @@ PROFILE_FULL=$(count_profile full)
 PROFILE_MCP=$(count_profile mcp)
 PROFILE_DEV=$(count_profile dev)
 PROFILE_OPS=$(count_profile ops)
-PROFILE_FRONTEND=$(count_profile frontend)
 PROFILE_CORE=$(count_profile core)
 LBM_PORTS=10   # hand-maintained: v0.14 LBM port semantic group
 
@@ -101,7 +100,7 @@ apply_markers() {
     -v m_br="$BRIDGES" \
     -v m_pf="$PROFILE_FULL"      -v m_pm="$PROFILE_MCP" \
     -v m_pd="$PROFILE_DEV"       -v m_po="$PROFILE_OPS" \
-    -v m_pr="$PROFILE_FRONTEND"  -v m_pc="$PROFILE_CORE" \
+    -v m_pc="$PROFILE_CORE" \
     -v m_lb="$LBM_PORTS" '
     function sub_marker(name, val,    re) {
       re = "<!-- count:" name " -->[^<]*<!-- /count:" name " -->"
@@ -114,7 +113,7 @@ apply_markers() {
       sub_marker("BLOCKS",           m_bl); sub_marker("AGENTS",           m_ag)
       sub_marker("BRIDGES",          m_br); sub_marker("PROFILE_FULL",     m_pf)
       sub_marker("PROFILE_MCP",      m_pm); sub_marker("PROFILE_DEV",      m_pd)
-      sub_marker("PROFILE_OPS",      m_po); sub_marker("PROFILE_FRONTEND", m_pr)
+      sub_marker("PROFILE_OPS",      m_po)
       sub_marker("PROFILE_CORE",     m_pc); sub_marker("LBM_PORTS",        m_lb)
       print
     }

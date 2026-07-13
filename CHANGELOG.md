@@ -4,6 +4,14 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
+- **fix(tooling): drop phantom `frontend` profile from `regen-counts.sh`** —
+  the generator called `count_profile frontend`, but no `frontend` profile exists
+  in MANIFEST (the 11 real ones: buddy/core/cortex/dashboard/dev/full/full-hub/
+  local-mirror/mcp/minimal/ops), so `PROFILE_FRONTEND` silently resolved to empty.
+  Removed the dead variable, awk binding, and marker substitution — the tool now
+  tracks full/mcp/dev/ops/core. Audited the remaining metrics (rust/shell/total
+  primitives, bridges, profiles, LBM ports); none carried such a stale reference.
+
 - **fix(tooling): `count_rust_crates` counts the excluded standalone crate** —
   it summed only `[workspace] members` (108), dropping `kei-model-router` (a real
   crate excluded from the parent workspace solely because it declares its own
