@@ -15,12 +15,16 @@ CARGO="$ROOT/_primitives/_rust/Cargo.toml"
 die() { printf 'regen-counts: %s\n' "$*" >&2; exit 2; }
 
 count_rust_crates() {
+  # workspace members + excluded standalone crates. kei-model-router is excluded
+  # only because it declares its own nested [workspace] (Cargo refuses it as a
+  # member), but it still ships as a crate — so it counts toward "Rust crates"
+  # (108 members + 1 excluded = 109, matching README's "By the numbers").
   awk '
-    /^\[workspace\]/          { in_ws=1; next }
-    /^\[/                     { in_ws=0 }
-    in_ws && /members *= *\[/ { in_arr=1 }
-    in_arr                    { total += gsub(/"[^"]+"/, "&"); if (index($0, "]")) in_arr=0 }
-    END                       { print total+0 }
+    /^\[workspace\]/                     { in_ws=1; next }
+    /^\[/                                { in_ws=0 }
+    in_ws && /^(members|exclude) *= *\[/ { in_arr=1 }
+    in_arr { total += gsub(/"[^"]+"/, "&"); if (index($0, "]")) in_arr=0 }
+    END    { print total+0 }
   ' "$CARGO"
 }
 

@@ -366,7 +366,8 @@ private repo for productisation.
 
 ## Architecture
 
-Stack: **Rust core** (109 workspace crates, ≤2 MB each, 12-trait runtime
+Stack: **Rust core** (109 Rust crates — 108 workspace + 1 standalone
+sub-workspace, ≤2 MB each, 12-trait runtime
 + plugin registry) + **TypeScript glue** (6 adapters: gmail / grok /
 recall / telegram / youtube / mcp-server). Backend impls cover:
 

@@ -4,6 +4,13 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
+- **fix(tooling): `count_rust_crates` counts the excluded standalone crate** —
+  it summed only `[workspace] members` (108), dropping `kei-model-router` (a real
+  crate excluded from the parent workspace solely because it declares its own
+  nested `[workspace]`). Now counts `members` + `exclude` = 109, matching README's
+  "By the numbers". Also corrected the README stack line: 109 **Rust** crates
+  (108 workspace + 1 standalone sub-workspace), not "109 workspace crates".
+
 - **fix(tooling): drop false-alarm count-equality WARN in `regen-counts.sh`** —
   the generator asserted `RUST_CRATES == RUST_PRIMITIVES` (108 Cargo workspace
   members vs 39 MANIFEST rust primitives), a stale invariant from when the
