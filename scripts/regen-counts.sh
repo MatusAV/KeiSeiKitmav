@@ -50,10 +50,14 @@ RUST_CRATES=$(count_rust_crates)
 RUST_PRIMITIVES=$(count_primitive_kind rust)
 SHELL_PRIMITIVES=$(count_primitive_kind shell)
 TOTAL_PRIMITIVES=$((RUST_PRIMITIVES + SHELL_PRIMITIVES))
-SKILLS=$(count_files "find '$ROOT/skills' -maxdepth 2 -name SKILL.md")
+# A skill = a directory under skills/ (some are SKILL.md-less routers, e.g.
+# ai-animation, rag-pipeline — count the dir, not the SKILL.md, or routers vanish).
+SKILLS=$(count_files "find '$ROOT/skills' -maxdepth 1 -mindepth 1 -type d")
 HOOKS=$(count_files "find '$ROOT/hooks' -maxdepth 1 -name '*.sh'")
-BLOCKS=$(count_files "find '$ROOT/_blocks' -maxdepth 1 -name '*.md' -not -name README.md")
-AGENTS=$(count_files "find '$ROOT/_manifests' -maxdepth 1 -name 'kei-*.toml'")
+# Blocks = reusable *.md, minus the two navigation files (README.md, INDEX.md).
+BLOCKS=$(count_files "find '$ROOT/_blocks' -maxdepth 1 -name '*.md' -not -name README.md -not -name INDEX.md")
+# Agent manifests are named <name>.toml (not kei-*.toml — that legacy glob matched 0).
+AGENTS=$(count_files "find '$ROOT/_manifests' -maxdepth 1 -name '*.toml'")
 BRIDGES=$(count_files "find '$ROOT/_bridges' -maxdepth 1 \( -name '*.tmpl' -o -name '*.mdc' \)")
 PROFILE_FULL=$(count_profile full)
 PROFILE_MCP=$(count_profile mcp)

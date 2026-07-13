@@ -51,8 +51,8 @@ sleep consolidates 30-session windows into morning markdown reports.
 
 ## By the numbers
 
-109 Rust crates · 52 skills · 53 hooks · 37 agent manifests ·
-83 substrate blocks · 11 install profiles (minimal → full).
+109 Rust crates · <!-- count:SKILLS -->52<!-- /count:SKILLS --> skills · <!-- count:HOOKS -->54<!-- /count:HOOKS --> hooks · <!-- count:AGENTS -->37<!-- /count:AGENTS --> agent manifests ·
+<!-- count:BLOCKS -->83<!-- /count:BLOCKS --> substrate blocks · 11 install profiles (minimal → full).
 
 ## Platforms
 
@@ -166,7 +166,7 @@ guards).
 wrapper that clones the repo and delegates to `bootstrap.sh` — single
 source of truth, no duplicated install logic.
 
-37 agents + 52 skills + 53 hooks + nightly consolidation wired
+<!-- count:AGENTS -->37<!-- /count:AGENTS --> agents + <!-- count:SKILLS -->52<!-- /count:SKILLS --> skills + <!-- count:HOOKS -->54<!-- /count:HOOKS --> hooks + nightly consolidation wired
 in under a minute on a clean machine. Install profiles
 (`outcome-only`, `minimal`, `core`, `ops`, `dev`, `mcp`, `cortex`,
 `local-mirror`, `dashboard`, `full-hub`, `full`) defined in

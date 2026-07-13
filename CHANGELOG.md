@@ -4,6 +4,18 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
+- **fix(tooling): revive dormant `regen-counts.sh` + reconcile asset counts** —
+  the README count generator carried three stale globs (`_manifests/kei-*.toml`
+  matched 0 of the 37 `<name>.toml` agent manifests; `skills` counted `SKILL.md`,
+  dropping the two SKILL.md-less router skills `ai-animation`/`rag-pipeline`;
+  `_blocks` excluded only `README.md`, not the `INDEX.md` nav file). Fixed the
+  globs to compute the intended **37 agents / 52 skills / 54 hooks / 83 blocks**,
+  wired the four `<!-- count:… -->` markers into README's "By the numbers" block
+  (they had never been added, so the generator was a silent no-op), and bumped the
+  one drifted figure — hooks 53→54 — across all three `plugin.json` copies (S1
+  parity held; `check-repo-ssot` stays green). `regen-counts.sh --check` now
+  meaningfully guards README count drift, installed locally as a `pre-commit` gate.
+
 - **fix(kei-search-core): `export` now includes sources** — `export.rs` only ever
   queried the `claims` table, so `kei-search-core export <id>` (md/json) silently
   omitted the fetched sources even though the pipeline persists them (a leftover

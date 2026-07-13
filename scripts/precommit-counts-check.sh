@@ -6,7 +6,18 @@
 
 set -eu
 
-ROOT=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
+# Resolve $0 through symlinks: when installed as .git/hooks/pre-commit via
+# `ln -s`, git runs the symlink, so $0 points into .git/hooks, not scripts/.
+SELF=$0
+while [ -L "$SELF" ]; do
+  dir=$(CDPATH= cd -- "$(dirname -- "$SELF")" && pwd)
+  link=$(readlink -- "$SELF")
+  case $link in
+    /*) SELF=$link ;;
+    *)  SELF=$dir/$link ;;
+  esac
+done
+ROOT=$(CDPATH= cd -- "$(dirname -- "$SELF")/.." && pwd)
 REGEN="$ROOT/scripts/regen-counts.sh"
 
 [ -x "$REGEN" ] || {
