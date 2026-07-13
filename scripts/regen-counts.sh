@@ -46,6 +46,22 @@ count_profile() {
 
 count_files() { bash -c "$1" | wc -l | tr -d ' '; }   # bash -c instead of eval (security audit LOW 2026-05-18)
 
+# MANIFEST rust primitives are a CURATED install-registry subset of the Cargo
+# workspace — RUST_CRATES != RUST_PRIMITIVES is expected (the rest are internal
+# dependency crates, not independently-installable primitives). The real
+# invariant is referential integrity: every rust primitive must point at a crate
+# that actually exists under _primitives/_rust/. Emits space-separated offenders.
+dangling_rust_primitives() {
+  awk '
+    /^\[primitive\./                  { r=0 }
+    /^kind *= *"rust"/                { r=1 }
+    /^\[/ && $0 !~ /^\[primitive\./   { r=0 }
+    r && /^crate *= *"/ { s=$0; sub(/^crate *= *"/,"",s); sub(/".*/,"",s); print s; r=0 }
+  ' "$MANIFEST" | while IFS= read -r c; do
+    [ -f "$ROOT/_primitives/_rust/$c/Cargo.toml" ] || printf '%s ' "$c"
+  done
+}
+
 RUST_CRATES=$(count_rust_crates)
 RUST_PRIMITIVES=$(count_primitive_kind rust)
 SHELL_PRIMITIVES=$(count_primitive_kind shell)
@@ -67,9 +83,10 @@ PROFILE_FRONTEND=$(count_profile frontend)
 PROFILE_CORE=$(count_profile core)
 LBM_PORTS=10   # hand-maintained: v0.14 LBM port semantic group
 
-[ "$RUST_CRATES" = "$RUST_PRIMITIVES" ] || \
-  printf 'regen-counts: WARN Cargo members (%s) != MANIFEST rust kind (%s)\n' \
-    "$RUST_CRATES" "$RUST_PRIMITIVES" >&2
+DANGLING=$(dangling_rust_primitives)
+[ -z "$DANGLING" ] || \
+  printf 'regen-counts: WARN MANIFEST rust primitive(s) reference missing crate: %s\n' \
+    "$DANGLING" >&2
 
 apply_markers() {
   awk \

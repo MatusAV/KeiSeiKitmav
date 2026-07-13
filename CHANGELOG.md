@@ -4,6 +4,16 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
+- **fix(tooling): drop false-alarm count-equality WARN in `regen-counts.sh`** —
+  the generator asserted `RUST_CRATES == RUST_PRIMITIVES` (108 Cargo workspace
+  members vs 39 MANIFEST rust primitives), a stale invariant from when the
+  workspace was flat. MANIFEST is a curated install-registry subset; the other
+  69 crates are internal dependency crates (verified all depended-upon, zero
+  orphans), so 108 != 39 is expected. Replaced the equality check with
+  referential integrity — WARN now fires only when a MANIFEST rust primitive
+  points at a crate absent from `_primitives/_rust/` (a real install break),
+  verified to still catch an injected dangling reference.
+
 - **fix(tooling): revive dormant `regen-counts.sh` + reconcile asset counts** —
   the README count generator carried three stale globs (`_manifests/kei-*.toml`
   matched 0 of the 37 `<name>.toml` agent manifests; `skills` counted `SKILL.md`,
