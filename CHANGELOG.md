@@ -4,6 +4,19 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
+(none — v0.66.0 just shipped)
+
+## v0.66.0 — 2026-07-13
+
+Feature + tooling-hardening cut. Headline: `kei-search-core` gains a live
+Anthropic web-search fetcher — the research pipeline now returns real sources in
+production instead of the no-op stub (opt-in via `ANTHROPIC_API_KEY`), and
+`export` surfaces them. Alongside: a full revival + audit of the dormant
+`regen-counts.sh` README-count generator (three stale globs, a false-alarm
+count-equality WARN, a crate undercount, and a phantom `frontend` profile — all
+fixed; counts are now 37 agents / 52 skills / 54 hooks / 83 blocks / 109 crates,
+guarded by a pre-commit gate), plus test-coverage and flake fixes.
+
 - **fix(tooling): drop phantom `frontend` profile from `regen-counts.sh`** —
   the generator called `count_profile frontend`, but no `frontend` profile exists
   in MANIFEST (the 11 real ones: buddy/core/cortex/dashboard/dev/full/full-hub/
