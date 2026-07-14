@@ -4,7 +4,27 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.67.0 just shipped)
+(none — v0.68.0 just shipped)
+
+## v0.68.0 — 2026-07-14
+
+Reliability fix for the error-spike detector. Headline: `error-spike-detector.sh`
+now classifies a tool call as failed using ONLY the harness's authoritative
+`is_error` signal, dropping the fragile substring heuristic that flagged any
+*successful* command whose output merely contained `error:/failed/panic/denied`.
+That heuristic caused systematic false positives during audits and code-reading —
+reading the detector itself (it contains "panic"/"denied") tripped a spike —
+inflating the pet statusline's ❌ counter with phantom errors. Genuine failures
+(non-zero exit, missing file, tool error) are still caught via `is_error`. Hook
+count unchanged (55).
+
+- **fix(hooks): error-spike-detector flags on is_error only** — removed the
+  `*error:*|*failed*|*panic*|*denied*` substring fallback from the flagging path
+  (RULE 0.14). A word appearing in successful output no longer counts as an error;
+  only the harness `is_error` flag does. Eliminates the false-positive class where
+  reading/greping/editing error-handling code or incident docs registered as tool
+  failures. Verified: benign trigger-word output → flag 0, real `is_error=true` →
+  flag 1.
 
 ## v0.67.0 — 2026-07-14
 
