@@ -48,6 +48,7 @@ HOME_DIR="${HOME:?HOME not set}"
 AGENTS_DIR="$HOME_DIR/.claude/agents"
 HOOKS_DIR="$HOME_DIR/.claude/hooks"
 SKILLS_DIR="$HOME_DIR/.claude/skills"
+RULES_DIR="$HOME_DIR/.claude/rules"
 MANIFEST="$KIT_DIR/_primitives/MANIFEST.toml"
 INSTALLED_FILE="$AGENTS_DIR/_primitives/.installed"
 LIB_DIR="$KIT_DIR/install"
@@ -124,6 +125,8 @@ source "$LIB_DIR/lib-hooks.sh"
 source "$LIB_DIR/lib-agents.sh"
 # shellcheck source=install/lib-skills.sh
 source "$LIB_DIR/lib-skills.sh"
+# shellcheck source=install/lib-rules.sh
+source "$LIB_DIR/lib-rules.sh"
 # shellcheck source=install/lib-wizard.sh
 source "$LIB_DIR/lib-wizard.sh"
 # shellcheck source=install/lib-pathway.sh
@@ -295,6 +298,7 @@ build_assembler
 generate_agents
 install_hooks
 install_skills
+install_rules
 install_bin
 maybe_activate_hooks
 

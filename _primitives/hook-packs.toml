@@ -20,7 +20,7 @@ observability = ["task-timer", "session-end-dump", "extract-task-durations", "er
 epistemic     = ["alignment-check", "no-downgrade", "recurrence-suggest"]
 orchestration = ["agent-fork-logger", "agent-fork-done", "orchestrator-dirty-check", "orchestrator-branch-check", "agent-capability-check", "agent-stub-scan", "milestone-commit-hook", "post-commit-audit", "post-write-check"]
 git-guard     = ["no-github-push"]
-stack-rust    = ["rust-first", "no-python-without-approval"]
+stack-rust    = ["rust-first"]
 
 # Always wired, never filtered (cosmetic / infra). The keisei-pet*.sh status
 # updater + the inline pet hook are kept by the filter directly (name match),

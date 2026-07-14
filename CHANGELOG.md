@@ -4,7 +4,33 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.68.0 just shipped)
+(none — v0.69.0 just shipped)
+
+## v0.69.0 — 2026-07-14
+
+Removes the Rust-first hard block on Python. Headline: the
+`no-python-without-approval.sh` PreToolUse:Bash gate — which rejected every
+`python`/`python3` invocation unless prefixed with `RULE02_BYPASS=1` — is
+**deleted**. It was installed 2026-04-21 to curb inline `python3` use for
+trivial calculations, but became redundant friction for legitimate one-offs.
+RULE 0.2 (Rust First) stays enforced advisorily by `rust-first.sh` and the
+`code-implementer-*` / `ml-implementer` manifest defaults; Python is simply no
+longer blocked at the tool layer. Hook count 55 → 54.
+
+Also lands the missing rule doc: `rust-first.sh` (and the now-deleted gate)
+pointed at `~/.claude/rules/rust-first.md`, which the kit never shipped. A
+canonical `rules/rust-first.md` is now version-controlled and installed via a
+new `install_rules` step, so the reminder's reference resolves.
+
+- **feat(hooks): remove no-python-without-approval.sh Rust-first hard gate** —
+  deleted the hook and every reference (`settings-snippet.json`,
+  `hook-packs.toml` `stack-rust`, `docs/encyclopedia/hooks-and-blocks.md`,
+  `skills/onboard/phase-2-propose.md`). Runtime `~/.claude/settings.json`
+  de-registered; README + `plugin.json` ×3 counts 55 → 54.
+- **feat(install): ship rules/ and install_rules** — new `install/lib-rules.sh`
+  copies `rules/*.md` into `~/.claude/rules/`, wired after `install_skills`.
+  Adds `rules/rust-first.md` (RULE 0.2 reference doc), fixing the dead
+  `~/.claude/rules/rust-first.md` reference in `rust-first.sh`.
 
 ## v0.68.0 — 2026-07-14
 

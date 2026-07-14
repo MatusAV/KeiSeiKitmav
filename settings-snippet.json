@@ -123,11 +123,6 @@
           },
           {
             "type": "command",
-            "command": "~/.claude/hooks/no-python-without-approval.sh",
-            "statusMessage": "rust-first python gate (RULE 0.2)..."
-          },
-          {
-            "type": "command",
             "command": "~/.claude/hooks/no-github-push.sh",
             "statusMessage": "no-github-push guard (RULE 0.1)..."
           },

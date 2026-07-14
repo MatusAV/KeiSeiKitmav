@@ -66,10 +66,9 @@ Confidence rubric (E3-E4 range — scan-derived, never E1):
 
 Map scan → hook suggestions:
 
-- Python detected → `no-python-without-approval` bypass hint (confidence
-  high if `pyproject.toml` present; pattern already exists at
-  `~/.claude/hooks/no-python-without-approval.sh`). Propose: "Document the
-  RULE 0.2 exception for this project in its CLAUDE.md; hook stays global."
+- Python detected → propose documenting the RULE 0.2 exception for this
+  project in its CLAUDE.md (Rust-first default is manifest/reminder-level;
+  no blocking hook is installed).
 - Rust detected → propose `cargo-check-preedit` (pre-edit hook running
   `cargo check --message-format=short`). If it doesn't exist on disk, it's
   a CREATE via `/escalate-recurrence`.
