@@ -57,7 +57,7 @@ check_optional_binary() {
 check_file_mode() {
   local path="$1" want="$2" got
   [ -f "$path" ] || { _warn "$path missing" "(optional)"; return 0; }
-  got="$(stat -f '%A' "$path" 2>/dev/null || stat -c '%a' "$path" 2>/dev/null || echo '?')"
+  got="$(stat -c '%a' "$path" 2>/dev/null || stat -f '%A' "$path" 2>/dev/null || echo '?')"
   if [ "$got" = "$want" ]; then _pass "$path mode $got"
   elif [ "$FIX" = "1" ] && chmod "$want" "$path" 2>/dev/null; then _pass "$path mode fixed -> $want"
   else _warn "$path mode $got (want $want)" "run with --fix"
