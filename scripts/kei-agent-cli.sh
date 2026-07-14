@@ -167,6 +167,54 @@ _glm_quota_mark_from() {
   return 0
 }
 
+# --- transient overload (HTTP 529) — SHORT cooldown, distinct from 429 quota ----
+# 529 = "service temporarily overloaded" (Z.ai capacity). Unlike a 429 quota cap
+# (reset hours/days out -> reroute to Opus), 529 is transient: the claude binary
+# retries with backoff for MINUTES then fails. A short cooldown marker lets the
+# next call fail fast instead of re-entering that retry loop. Self-heals after
+# KEI_GLM_OVERLOAD_COOLDOWN_SECS. Verified [REAL: task b288wchqi.output 2026-07-14]:
+# raw curl intermittent 200/529; launcher ledger call -> "API Error: 529" only
+# after a multi-minute retry-backoff.
+_glm_overload_marker() { printf '%s' "${KEI_GLM_OVERLOAD_MARKER:-$HOME/.claude/.glm-overload-blocked}"; }
+
+# Prints the human cooldown string + returns 0 if an unexpired cooldown marker
+# exists; else clears a stale marker and returns 1. Mirrors _glm_quota_blocked.
+_glm_overload_blocked() {
+  local m; m=$(_glm_overload_marker)
+  [ -f "$m" ] || return 1
+  local reset_epoch reset_human now
+  reset_epoch=$(sed -n '1p' "$m" 2>/dev/null)
+  reset_human=$(sed -n '2p' "$m" 2>/dev/null)
+  now=$(date -u +%s)
+  if printf '%s' "$reset_epoch" | grep -qE '^[0-9]+$' && [ "$now" -lt "$reset_epoch" ]; then
+    printf '%s' "${reset_human:-cooldown active}"
+    return 0
+  fi
+  rm -f "$m" 2>/dev/null || true   # expired → self-heal
+  return 1
+}
+
+# Writes a short cooldown marker (now + KEI_GLM_OVERLOAD_COOLDOWN_SECS).
+_glm_overload_mark() {
+  local m cd reset_epoch
+  m=$(_glm_overload_marker); cd="${KEI_GLM_OVERLOAD_COOLDOWN_SECS:-120}"
+  reset_epoch=$(( $(date -u +%s) + cd ))
+  printf '%s\n~%ss cooldown (Z.ai HTTP 529 overloaded)\nauto-marked %s\n' \
+    "$reset_epoch" "$cd" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > "$m" 2>/dev/null || true
+}
+
+# Scans a failure payload ($1) for a 529 overload signature; marks a short
+# cooldown + returns 0 if found, else 1. Signatures: raw body 'overloaded_error'/
+# '[1305]'/'temporarily overloaded'; binary JSON '"api_error_status":529'/'Error: 529'.
+_glm_overload_mark_from() {
+  case "$1" in
+    *overloaded_error*|*'[1305]'*|*'temporarily overloaded'*|*'"api_error_status":529'*|*'Error: 529'*) : ;;
+    *) return 1 ;;
+  esac
+  _glm_overload_mark
+  return 0
+}
+
 # Cheap preflight so a FRESH exhaustion fails fast on ANY path — including the
 # MCP spawn_agent 60s cap (kill_on_drop=true), which kills the launcher before
 # the post-call detector above can run, so that path can't self-mark on its own.
@@ -197,6 +245,7 @@ _glm_quota_preflight() {
   payload=$(printf '%s' "$body" | sed '$d')
   case "$http" in
     429) _glm_quota_mark_from "$payload" || true; return 1 ;;   # exhausted → marked
+    529) _glm_overload_mark; return 2 ;;                        # overloaded → short cooldown
     200) : > "$ok" 2>/dev/null || true; return 0 ;;             # healthy → refresh cache
     *)   return 0 ;;                                            # unknown → proceed
   esac
@@ -247,7 +296,7 @@ backend_invoke() {
       # Fail fast if a prior 429 marked the quota exhausted — no network call,
       # no prompt spent. Bypass with KEI_GLM_IGNORE_QUOTA=1 to force a retry.
       if [ "${KEI_GLM_IGNORE_QUOTA:-0}" != "1" ]; then
-        local _blocked_until
+        local _blocked_until _ol_until _pf_rc
         if _blocked_until=$(_glm_quota_blocked); then
           printf '[kei-agent-cli] GLM quota exhausted — cheap routing unavailable until %s.\n' "$_blocked_until" >&2
           printf '  (Z.ai HTTP 429, weekly/monthly cap.) Reroute this agent to Opus:\n' >&2
@@ -255,14 +304,30 @@ backend_invoke() {
           printf '  Force a GLM retry anyway: KEI_GLM_IGNORE_QUOTA=1\n' >&2
           return 4
         fi
-        # No marker yet — cheap preflight so a fresh 429 fails fast even under
-        # the MCP 60s cap (which kills before the post-call detector runs).
-        if ! _glm_quota_preflight; then
+        # Transient 529 overload cooldown active → fail fast instead of re-entering
+        # the binary's multi-minute retry-backoff against an overloaded Z.ai.
+        if _ol_until=$(_glm_overload_blocked); then
+          printf '[kei-agent-cli] Z.ai temporarily overloaded (HTTP 529) — GLM in cooldown for %s.\n' "$_ol_until" >&2
+          printf '  Transient server-side capacity issue; retry shortly, or run on Opus now:\n' >&2
+          printf '    kei agent --on=claude %s "<task>"\n' "${agent_name:-<agent>}" >&2
+          printf '  Force a GLM retry anyway: KEI_GLM_IGNORE_QUOTA=1\n' >&2
+          return 5
+        fi
+        # No marker yet — cheap preflight so a fresh 429/529 fails fast even under
+        # the MCP hard-cap (which kills before the post-call detector runs).
+        _pf_rc=0; _glm_quota_preflight || _pf_rc=$?
+        if [ "$_pf_rc" = "1" ]; then
           local _pf; _pf=$(_glm_quota_blocked || printf 'reset pending')
           printf '[kei-agent-cli] GLM quota exhausted (preflight 429) — unavailable until %s.\n' "$_pf" >&2
           printf '  Reroute this agent to Opus:\n    kei agent --on=claude %s "<task>"\n' "${agent_name:-<agent>}" >&2
           printf '  Force a GLM retry anyway: KEI_GLM_IGNORE_QUOTA=1\n' >&2
           return 4
+        elif [ "$_pf_rc" = "2" ]; then
+          local _pf; _pf=$(_glm_overload_blocked || printf 'cooldown pending')
+          printf '[kei-agent-cli] Z.ai overloaded (preflight 529) — GLM in cooldown for %s.\n' "$_pf" >&2
+          printf '  Transient; retry shortly, or run on Opus now:\n    kei agent --on=claude %s "<task>"\n' "${agent_name:-<agent>}" >&2
+          printf '  Force a GLM retry anyway: KEI_GLM_IGNORE_QUOTA=1\n' >&2
+          return 5
         fi
       fi
       # Ledger mode (default on; disable with KEI_GLM_LEDGER=0). Runs the call
@@ -287,6 +352,8 @@ backend_invoke() {
         # fast-fail so the next call doesn't burn another ~180s retry loop.
         if _glm_quota_mark_from "$_out"; then
           printf '[kei-agent-cli] Z.ai 429 (quota exhausted) — marked; further GLM calls fail fast until reset. Reroute: kei agent --on=claude %s\n' "${agent_name:-<agent>}" >&2
+        elif _glm_overload_mark_from "$_out"; then
+          printf '[kei-agent-cli] Z.ai 529 (overloaded) — marked; next GLM call fast-fails during cooldown. Retry shortly or reroute: kei agent --on=claude %s\n' "${agent_name:-<agent>}" >&2
         elif [ -n "$_out" ]; then
           : > "$(_glm_quota_ok_cache)" 2>/dev/null || true   # not rate-limited → refresh healthy cache (skips next preflight)
         fi
