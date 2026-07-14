@@ -18,17 +18,22 @@ input="$(cat)"
 is_err=$(printf '%s' "$input" | jq -r '.tool_response.is_error // empty' 2>/dev/null || true)
 msg=$(printf '%s' "$input" | jq -r '.tool_response.content // .tool_response // empty' 2>/dev/null || true)
 
-# Classify current call as errored if explicit is_error=true OR message
-# matches a common failure signature. Empty tool_response → treat as OK.
+# Classify current call as errored. AUTHORITATIVE signal ONLY: the harness's
+# explicit is_error flag (set on Bash non-zero exit, missing file, tool failure).
+# Empty / false is_error → treat as OK.
+#
+# v0.68 fix (2026-07-14): the previous substring fallback (flag=1 when the tool
+# OUTPUT merely contained error:/failed/panic/denied) produced systematic FALSE
+# POSITIVES — any *successful* command that reads or greps error-handling code,
+# or edits a doc discussing failures, prints those words and was wrongly counted
+# as an error. Proven: reading THIS file (it contains "panic"/"denied") flagged
+# a spike mid-audit. A word appearing in output does not mean the call failed;
+# is_error does. Heuristic removed — genuine silent-success-with-error-text is
+# rare and not worth crying wolf on every audit (RULE 0.14 is advisory).
 flag=0
 case "$is_err" in
     true|True|TRUE|1) flag=1 ;;
 esac
-if [ "$flag" -eq 0 ] && [ -n "$msg" ]; then
-    case "$(printf '%s' "$msg" | tr 'A-Z' 'a-z')" in
-        *error:*|*failed*|*panic*|*denied*) flag=1 ;;
-    esac
-fi
 
 window="${HOME}/.claude/memory/error-window.txt"
 backlog="${HOME}/.claude/memory/audit-backlog.md"
