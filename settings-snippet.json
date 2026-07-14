@@ -288,6 +288,11 @@
             "type": "command",
             "command": "~/.claude/hooks/first-run-onboard.sh",
             "statusMessage": "KeiSeiKit first-run onboard nudge..."
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/kit-version-banner.sh",
+            "statusMessage": "KeiSeiKitmav version banner..."
           }
         ]
       }
