@@ -4,7 +4,44 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.66.0 just shipped)
+(none — v0.67.0 just shipped)
+
+## v0.67.0 — 2026-07-14
+
+Session-UX + resilience cut. Headline: a `SessionStart` version banner that reads
+the kit version live from `plugin.json` (SSOT), so every terminal announces the
+substrate it loaded and the number can never go stale. Alongside: two
+self-healing fixes — `kei-doctor`'s `cortex.token` mode check stops false-alarming
+on Linux, and `kei agent --on=glm` now fast-fails on Z.ai's HTTP 529 overload
+instead of burning minutes in retry-backoff. Hook count 54 → 55 across README and
+all three `plugin.json` copies.
+
+- **feat(hooks): version banner on SessionStart (live from plugin.json)** — new
+  `kit-version-banner.sh` prints `[KeiSeiKitmav vX.Y.Z] substrate loaded` at every
+  session start, reading the version live from `plugin.json` (SSOT) so it never
+  drifts. Registered as a second `SessionStart` hook in `settings-snippet.json`
+  (idempotent, alongside `first-run-onboard`); jq with sed fallback, always exit 0.
+  README + all three `plugin.json` descriptions reconciled to the true hook count
+  (54 → 55; regen-counts and check-repo-ssot both green).
+
+- **fix(tooling): `kei-doctor` cortex.token mode — GNU stat first** — `check_file_mode`
+  tried BSD `stat -f %A` before GNU `stat -c %a`. On Linux `stat -f` means
+  *filesystem* status (exit 0, multi-line blob), so the `||` fallback to the correct
+  GNU form never fired: `$got` was garbage, never equal to the wanted mode, so
+  `cortex.token` warned forever even at 600 (and `--fix` masked it with a no-op
+  chmod). Reversed the order (GNU first, BSD fallback) — correct on both Linux and
+  macOS. Verify: `kei-doctor` (no `--fix`) → `cortex.token` mode 600 pass, stable
+  pass 16 / warn 5 / fail 0, exit 0.
+
+- **fix(glm): fast-fail on Z.ai HTTP 529 (transient overload)** — `kei agent --on=glm`
+  entered a multi-minute retry-backoff when Z.ai returned HTTP 529 "temporarily
+  overloaded"; the quota-guard only detected 429. Added a short, self-healing
+  cooldown path mirroring the 429 handling: a distinct marker
+  (`~/.claude/.glm-overload-blocked`, window via `KEI_GLM_OVERLOAD_COOLDOWN_SECS`),
+  `_glm_overload_*` helpers, a preflight 529 branch, and a new return code 5 (529
+  overload) alongside 4 (429 quota). Verify: forced-marker end-to-end fast-fails
+  with exit 5 and no network; detector matches every real 529 signature with no
+  false positive on a healthy response.
 
 ## v0.66.0 — 2026-07-13
 
