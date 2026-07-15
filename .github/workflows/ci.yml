@@ -204,5 +204,9 @@ jobs:
         run: bash tests/hook-outcome-backfill-test.sh
       - name: gdrive import (SKIP=77 when mocks/binary absent)
         run: |
-          bash tests/gdrive_import_integration.sh; ec=$?
+          # GitHub runs `run:` blocks under `bash -e`, so a bare `cmd; ec=$?`
+          # aborts on the SKIP=77 exit before ec is captured. Use `|| ec=$?`
+          # so the non-zero exit is "handled" and set -e does not fire.
+          ec=0
+          bash tests/gdrive_import_integration.sh || ec=$?
           [ "$ec" -eq 0 ] || [ "$ec" -eq 77 ] || exit "$ec"
