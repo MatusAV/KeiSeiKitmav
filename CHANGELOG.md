@@ -4,7 +4,24 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.72.0 just shipped)
+(none — v0.73.0 just shipped)
+
+## v0.73.0 — 2026-07-15
+
+Pulls Denis's frontend/web skill suite from `KeiTeam/keiseikit` into the fork —
+additive only (no shared git history, transferred by path, nothing overwritten).
+
+- **feat(skills): 17 frontend/web skills** — a11y-audit, design-system,
+  figma-to-code, form-builder, frontend-design, landing-page, responsive-audit,
+  seo-audit, share-page, site-builder, site-create, site-teardown, ui-component,
+  visual-loop, web-assets, web-deploy, web-effects.
+- **feat(agent): frontend-validator** — `tsc --noEmit` / eslint / kei-db-contract
+  continuous validator (advisory).
+- **feat(primitives): mock-render, visual-diff, tokens-sync** Rust crates (build
+  clean in the workspace, 53 s) + `design-scrape.sh` / `live-preview.sh` /
+  `figma-tokens.sh` shell primitives + `stack-astro` block.
+- Counters: skills 52→69, agents 37→38, blocks 83→84. Source:
+  `KeiTeam/keiseikit` @477d3e9 (Denis, v0.38.0).
 
 ## v0.72.0 — 2026-07-15
 
