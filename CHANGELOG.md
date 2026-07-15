@@ -4,7 +4,17 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.74.0 just shipped)
+(none — v0.74.1 just shipped)
+
+## v0.74.1 — 2026-07-15
+
+- **fix(agent): reasoning-corpus-builder role.** The v0.74.0 port mapped Denis's
+  `substrate_role = "read-write"` onto `edit-local` — a Rust code-implementer role
+  that injected cargo/Constructor/test gates, forbade the git commit the agent's loop
+  needs, and denied its declared `Agent` + `Task*` tools. Added a purpose-built
+  spawnable role `edit-orchestrator` (scope + report-format capability blocks, tools
+  superset incl. Agent/Task*/open Bash, git permitted like `merger`, no Rust gates);
+  re-pointed the manifest and recomposed (417→277 lines). Counters unchanged.
 
 ## v0.74.0 — 2026-07-15
 
