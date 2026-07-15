@@ -28,11 +28,21 @@ INPUT=$(cat 2>/dev/null || true)
 FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
 [ -z "$FILE" ] && exit 0
 
-# Only fire on files inside KeiSeiKit-public (substrate dirs)
+# Cheap pre-gate: only substrate-shaped paths proceed to the (costlier) walk.
 case "$FILE" in
-    */KeiSeiKit-public/*) ;;
+    */skills/*/SKILL.md|*/hooks/*.sh|*/_blocks/*.md|*/_capabilities/*|*/_roles/*|*/_primitives/_rust/*) ;;
     *) exit 0 ;;
 esac
+
+# Confirm inside a KeiSeiKit repo (sentinel = settings-snippet.json at root).
+# Name-independent — works for any clone dir. Empty → not the kit → skip.
+KIT_ROOT=""
+d=$(dirname "$FILE")
+while [ -n "$d" ] && [ "$d" != "/" ]; do
+    if [ -f "$d/settings-snippet.json" ]; then KIT_ROOT="$d"; break; fi
+    d=$(dirname "$d")
+done
+[ -n "$KIT_ROOT" ] || exit 0
 
 # Resolve binaries; bail silently if absent (bootstrap-friendly)
 KR=$(command -v kei-registry 2>/dev/null)
@@ -68,9 +78,7 @@ case "$FILE" in
         ;;
     */_blocks/*.md|*/_capabilities/*|*/_roles/*)
         # Broad refresh — substrate composition affects neighboring rows
-        # Find KeiSeiKit-public root
-        ROOT=$(echo "$FILE" | sed -E 's|(.*/KeiSeiKit-public)/.*|\1|')
-        "$KR" index-substrate "$ROOT" >/dev/null 2>&1 || true
+        "$KR" index-substrate "$KIT_ROOT" >/dev/null 2>&1 || true
         ;;
     */_primitives/_rust/*/src/*|*/_primitives/_rust/*/Cargo.toml)
         # Primitive crate edit — re-register that crate via kei-import-project

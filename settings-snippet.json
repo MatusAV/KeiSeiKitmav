@@ -21,6 +21,21 @@
           },
           {
             "type": "command",
+            "command": "~/.claude/hooks/auto-register-on-edit.sh",
+            "statusMessage": "auto-register substrate block (registry)..."
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/auto-encyclopedia-refresh.sh",
+            "statusMessage": "auto-encyclopedia refresh (DNA-INDEX)..."
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/decompose-rules-on-edit.sh",
+            "statusMessage": "decompose-rules on edit (registry)..."
+          },
+          {
+            "type": "command",
             "command": "~/.claude/scripts/keisei-pet-update.sh lang"
           }
         ]
@@ -70,6 +85,15 @@
           {
             "type": "command",
             "command": "~/.claude/scripts/keisei-pet-update.sh plan"
+          }
+        ]
+      },
+      {
+        "matcher": "Skill",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/skill-record.sh"
           }
         ]
       },
@@ -176,6 +200,11 @@
         "hooks": [
           {
             "type": "command",
+            "command": "~/.claude/hooks/glm-route-guard.sh",
+            "statusMessage": "glm-route guard (cost routing)..."
+          },
+          {
+            "type": "command",
             "command": "~/.claude/hooks/agent-fork-logger.sh",
             "statusMessage": "agent-fork-logger (RULE 0.12)..."
           },
@@ -225,6 +254,10 @@
           },
           {
             "type": "command",
+            "command": "~/.claude/hooks/affect-live-scan.sh"
+          },
+          {
+            "type": "command",
             "command": "~/.claude/hooks/chat-numeric-prewarn.sh",
             "statusMessage": "chat-numeric-prewarn (RULE 0.18)..."
           },
@@ -267,6 +300,11 @@
             "type": "command",
             "command": "~/.claude/hooks/chat-numeric-postflag.sh",
             "statusMessage": "chat-numeric-postflag (RULE 0.18)..."
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/numeric-claims-record.sh",
+            "statusMessage": "numeric-claims-record journal (RULE 0.18)..."
           },
           {
             "type": "command",

@@ -19,20 +19,30 @@ INPUT=$(cat 2>/dev/null || true)
 FILE=$(printf '%s' "$INPUT" | jq -r '.tool_input.file_path // empty' 2>/dev/null)
 [ -z "$FILE" ] && exit 0
 
-# Only fire on substrate edits inside KeiSeiKit-public — same scope as
-# auto-register-on-edit.sh. Skip if the touched file is the encyclopedia
-# itself (avoids infinite loop).
+# Only fire on substrate-shaped files (cheap suffix pre-gate before the walk).
+# Name-independent — works for any clone dir (keisei, KeiSeiKit-public, …).
+# Skip the encyclopedia itself to avoid an infinite loop.
 case "$FILE" in
-    */KeiSeiKit-public/docs/DNA-INDEX.md) exit 0 ;;
-    */KeiSeiKit-public/skills/*/SKILL.md) ;;
-    */KeiSeiKit-public/hooks/*.sh) ;;
-    */KeiSeiKit-public/_blocks/*.md) ;;
-    */KeiSeiKit-public/_capabilities/*) ;;
-    */KeiSeiKit-public/_roles/*) ;;
-    */KeiSeiKit-public/_primitives/_rust/*/src/*) ;;
-    */KeiSeiKit-public/_primitives/_rust/*/Cargo.toml) ;;
+    */docs/DNA-INDEX.md) exit 0 ;;
+    */skills/*/SKILL.md) ;;
+    */hooks/*.sh) ;;
+    */_blocks/*.md) ;;
+    */_capabilities/*) ;;
+    */_roles/*) ;;
+    */_primitives/_rust/*/src/*) ;;
+    */_primitives/_rust/*/Cargo.toml) ;;
     *) exit 0 ;;
 esac
+
+# Confirm the file lives inside a KeiSeiKit repo: walk up to the sentinel
+# (settings-snippet.json at repo root). Empty ROOT → not the kit → skip.
+ROOT=""
+d=$(dirname "$FILE")
+while [ -n "$d" ] && [ "$d" != "/" ]; do
+    if [ -f "$d/settings-snippet.json" ]; then ROOT="$d"; break; fi
+    d=$(dirname "$d")
+done
+[ -n "$ROOT" ] || exit 0
 
 # Resolve binary
 KR=$(command -v kei-registry 2>/dev/null)
@@ -46,8 +56,6 @@ if [ -z "$KR" ]; then
 fi
 [ -z "$KR" ] && exit 0
 
-# Resolve KeiSeiKit-public root
-ROOT=$(echo "$FILE" | sed -E 's|(.*/KeiSeiKit-public)/.*|\1|')
 [ -d "$ROOT/docs" ] || exit 0
 
 # Regenerate encyclopedia. Output to repo's docs/DNA-INDEX.md so a

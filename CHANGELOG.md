@@ -4,7 +4,40 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.69.0 just shipped)
+(none — v0.70.0 just shipped)
+
+## v0.70.0 — 2026-07-15
+
+Hook-wiring completeness + substrate-encyclopedia revival. An audit of the live
+profile vs the canonical `settings-snippet.json` found seven hooks present on
+disk but absent from the installer snippet — so a fresh reinstall silently
+dropped them. This release backports all seven into the snippet (and syncs the
+live profile via idempotent jq-merge), and makes the substrate-encyclopedia
+hooks actually functional off the original author's machine.
+
+- **feat(hooks): backport 7 hooks into settings-snippet.json** —
+  `glm-route-guard.sh` (PreToolUse:Agent — GLM cost-routing guard, was live-only
+  and would vanish on reinstall), `numeric-claims-record.sh` (Stop, RULE 0.18
+  journal), `skill-record.sh` (PostToolUse:Skill, Phase-D metrics),
+  `affect-live-scan.sh` (UserPromptSubmit, mid-session affect refresh), and the
+  substrate-registry trio `auto-register-on-edit.sh` /
+  `auto-encyclopedia-refresh.sh` / `decompose-rules-on-edit.sh`
+  (PostToolUse:Write|Edit). Live wiring 47 → 53 entries (idempotent merge,
+  `glm-route-guard` de-duped as already-present).
+- **fix(hooks): name-independent kit-root detection** —
+  `auto-register-on-edit.sh` and `auto-encyclopedia-refresh.sh` hard-coded the
+  repo dir name `KeiSeiKit-public` in their path gate and ROOT resolution, so
+  they were a guaranteed no-op on any clone with a different directory name.
+  Replaced with a sentinel walk (up to `settings-snippet.json` at the repo root)
+  so they fire for any clone dir (`keisei`, `KeiSeiKit-public`, …). A cheap
+  substrate-suffix pre-gate preserves the fast path for non-substrate edits.
+- **chore(hooks): remove check-error-patterns.sh tombstone** — a
+  DELETED-2026-05-02 tombstone still shipping on disk. Removed from repo +
+  profile. Hook count 54 → 53; README marker + `plugin.json` ×3 updated.
+- **docs: regenerate DNA-INDEX.md** — the committed encyclopedia was a stale
+  2026-05-14 snapshot (679 blocks, incl. `fake-kit` test-fixture pollution).
+  Regenerated from the live registry to an honest, fixture-free 222-block
+  baseline reflecting this substrate.
 
 ## v0.69.0 — 2026-07-14
 
