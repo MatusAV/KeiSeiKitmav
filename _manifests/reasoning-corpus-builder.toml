@@ -12,10 +12,12 @@ name = "reasoning-corpus-builder"
 description = "Builds the Verified Reasoning Corpus (denis/reasoning-corpus, MAX-free, OSS): orchestrates teacher-authored decomposition traces through scrub -> per-domain oracle -> doctrine gate -> track-tagged assembly. Author/gate split: teachers (GLM/Opus) author candidates, this agent GATES (scrub+oracle+commit). Invoke for VRC corpus generation, safety-rule-to-pair authoring, reasoning-trace verification, P3/P4 corpus build."
 tools = ["Glob", "Grep", "Read", "Edit", "Write", "Bash", "Agent", "TaskCreate", "TaskUpdate", "TaskList", "TaskGet"]
 model = "sonnet"
-# Denis's original used substrate_role = "read-write"; this fork has no such role
-# (roles: auditor/edit-local/edit-shared/explorer/git-ops/merger/read-only), so mapped
-# to "edit-local" — the standard write-capable role (same one frontend-validator uses).
-substrate_role = "edit-local"
+# Denis's original used substrate_role = "read-write" (a role neither kit ships). Mapped
+# to the purpose-built fork role "edit-orchestrator" (added in this same change): it grants
+# Agent + Task* + open Bash + git-commit — which this agent needs (spawns teacher sub-agents,
+# runs per-domain oracles, commits verified batches) — and drops the Rust code-implementer
+# gates (cargo/Constructor/test/no-dep-bump) that "edit-local" wrongly imposed on a jsonl agent.
+substrate_role = "edit-orchestrator"
 # Denis's original used produces_artifact = "corpus"; this fork's assembler has no
 # "corpus" schema (valid: patch/plan/research/review/spec), so mapped to the closest —
 # "research" (VRC = evidence-graded verified-citation knowledge artifact).

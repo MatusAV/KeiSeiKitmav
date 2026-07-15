@@ -1,19 +1,19 @@
 # KeiSeiKit DNA Encyclopedia
 
-> Auto-generated from kei-registry. Last regenerated: 2026-07-15T10:31:10Z.
-> Total blocks: 222. Per-type breakdown:
+> Auto-generated from kei-registry. Last regenerated: 2026-07-15T12:22:17Z.
+> Total blocks: 223. Per-type breakdown:
 
 | Type | Count |
 |---|---:|
 | atom | 4 |
 | hook | 55 |
-| primitive | 109 |
+| primitive | 110 |
 | rule | 4 |
 | skill | 50 |
 
 ---
 
-## Primitive (109)
+## Primitive (110)
 
 Sorted alphabetically by name.
 
@@ -125,6 +125,7 @@ Sorted alphabetically by name.
 | kei-token-tracker | primitive::cli,md,sq… | _primitives/_rust/kei-token-tracker/Cargo.toml | 794bdca9 |
 | kei-tts | primitive::md,networ… | _primitives/_rust/kei-tts/Cargo.toml | 3e875999 |
 | kei-tty | primitive::cli,md,ne… | _primitives/_rust/kei-tty/Cargo.toml | 062d358b |
+| kei-tui::kei-tui | primitive::_::60dce0… | _primitives/_rust/kei-tui/Cargo.toml | f3f796c7 |
 | kei-watch | primitive::cli,md::7… | _primitives/_rust/kei-watch/Cargo.toml | 1de6e250 |
 | keisei | primitive::cli,md,re… | _primitives/_rust/keisei/Cargo.toml | 57874ba4 |
 | ssh-check | primitive::cli,md::6… | _primitives/_rust/ssh-check/Cargo.toml | efaf8856 |
