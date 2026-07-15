@@ -1,6 +1,10 @@
 [workspace]
 resolver = "2"
 members = [
+    # pulled from KeiTeam/keiseikit (Denis) — frontend suite Tier 2
+    "mock-render",
+    "visual-diff",
+    "tokens-sync",
     "kei-ledger",
     "kei-migrate",
     "kei-changelog",
