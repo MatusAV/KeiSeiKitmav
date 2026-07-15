@@ -41,19 +41,26 @@ seed_registry() {
   say "seeding substrate registry (~/.claude/registry.sqlite)"
   # Idempotent full scan of the installed substrate. Default DB (the same one
   # the encyclopedia hooks read — never pass --db so both agree).
-  if "$kr" scan \
-        --kit-root "$KIT_DIR" \
-        --rules-root "$HOME_DIR/.claude/rules" \
-        --hooks-root "$HOME_DIR/.claude/hooks" >/dev/null 2>&1; then
-    say "  registry seeded from installed substrate (idempotent)"
+  # index-substrate is KIT-ROOT-scoped (walks only substrate dirs under the kit:
+  # primitives/skills/hooks/atoms/blocks/capabilities/roles) — NOT ~/.claude.
+  # The previous `scan --rules-root ~/.claude/rules --hooks-root ~/.claude/hooks`
+  # registered ~60 installed-copy blocks with absolute `/home/<user>/.claude`
+  # paths into docs/DNA-INDEX.md — a COMMITTED, shared artefact — inflating it
+  # 223->405 and baking machine-specific paths into a repo file. index-substrate
+  # yields repo-relative paths that render identically on any checkout, and it
+  # skips node_modules/target so it stays fast. (KIT_DIR = repo root.)
+  if "$kr" index-substrate "$KIT_DIR" >/dev/null 2>&1; then
+    say "  registry seeded from kit substrate (repo-scoped, idempotent)"
   else
     warn "  registry seed failed (non-fatal); encyclopedia populates on first edit"
     return 0
   fi
-  # Rule fragments — companion to decompose-rules-on-edit.sh. Optional, guarded.
-  local kd
-  if kd="$(_registry_seed_bin kei-decompose)"; then
-    "$kd" decompose-rules >/dev/null 2>&1 || true
-  fi
+  # NOTE: we deliberately do NOT run `kei-decompose decompose-rules` at seed
+  # time. It writes rule fragments to ~/.claude/registry-fragments and registers
+  # them as Rule blocks whose paths are OUTSIDE the kit root — the encyclopedia
+  # cannot relativise them, so they'd re-introduce absolute ~/.claude paths into
+  # the committed docs/DNA-INDEX.md (the very pollution this seed avoids). The
+  # decompose-rules-on-edit.sh hook regenerates those fragments on the first rule
+  # edit, matching the incremental-population model used for the encyclopedia.
   return 0
 }
