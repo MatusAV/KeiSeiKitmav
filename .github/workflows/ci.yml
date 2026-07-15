@@ -72,8 +72,11 @@ jobs:
           sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
           echo "--- after rm ---"
           df -h
-          sudo swapoff /swapfile
-          sudo rm /swapfile
+          # Recent GHA ubuntu images ship WITHOUT a pre-existing /swapfile, so
+          # `swapoff`/`rm` on it aborts the step under set -e (exit 4). Guard
+          # both so a missing swapfile is a no-op; fallocate then creates 8 GB.
+          sudo swapoff /swapfile 2>/dev/null || true
+          sudo rm -f /swapfile
           sudo fallocate -l 8G /swapfile
           sudo chmod 600 /swapfile
           sudo mkswap /swapfile
