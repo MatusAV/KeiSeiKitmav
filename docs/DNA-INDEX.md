@@ -1,6 +1,6 @@
 # KeiSeiKit DNA Encyclopedia
 
-> Auto-generated from kei-registry. Last regenerated: 2026-07-15T08:02:32Z.
+> Auto-generated from kei-registry. Last regenerated: 2026-07-15T10:31:10Z.
 > Total blocks: 222. Per-type breakdown:
 
 | Type | Count |

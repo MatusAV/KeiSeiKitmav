@@ -5,6 +5,8 @@ members = [
     "mock-render",
     "visual-diff",
     "tokens-sync",
+    # pulled from KeiTeam/keiseikit (Denis) — v0.74.0
+    "kei-tui",
     "kei-ledger",
     "kei-migrate",
     "kei-changelog",

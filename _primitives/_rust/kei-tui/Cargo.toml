@@ -1,0 +1,52 @@
+[package]
+name = "kei-tui"
+version = "0.1.0"
+edition.workspace = true
+rust-version.workspace = true
+description = "Native TUI cockpit for kei-cortex — file tree + embedded shell + live session agents"
+authors.workspace = true
+license.workspace = true
+
+[[bin]]
+name = "kei-tui"
+path = "src/main.rs"
+
+[lib]
+name = "kei_tui"
+path = "src/lib.rs"
+
+[features]
+# Voice I/O (mic capture + TTS playback). Upstream (Denis) defaults it ON, but
+# this fork's host (WSL, no ALSA/audio dev libs) can't build cpal — so default
+# is empty here. Enable on an ALSA host with `--features voice`.
+default = []
+voice = ["dep:cpal", "dep:rodio", "dep:hound"]
+
+[dependencies]
+cpal = { version = "0.15", optional = true }              # mic capture (voice STT)
+rodio = { version = "0.20", optional = true, default-features = false, features = ["symphonia-all"] } # TTS playback (mp3/wav)
+hound = { version = "3", optional = true }                # WAV encode of captured mic audio
+ratatui = "0.29"
+crossterm = { version = "0.28", features = ["event-stream"] }
+vt100 = "0.15"                                            # ANSI parser: PTY bytes → screen grid (blitted into ratatui by hand)
+portable-pty = { workspace = true }                       # spawn $SHELL (already in workspace lock)
+tokio = { workspace = true }
+futures = { workspace = true }
+anyhow = { workspace = true }
+clap = { workspace = true }
+reqwest = { workspace = true }                            # SSE client to our kei-cortex /v1/runs (Path A)
+serde = { workspace = true }                              # session persistence (chat history survives restart)
+serde_json = { workspace = true }
+chrono = { workspace = true }                             # local-midnight daily token reset
+# Inline images (t05). default-features off drops `chafa-dyn` (needs system
+# libchafa) — we only want the pure-Rust protocols (kitty/iterm2/sixel/halfblock)
+# via crossterm + image decoding.
+ratatui-image = { version = "8", default-features = false, features = ["crossterm", "image-defaults"] }
+image = { version = "0.25", default-features = false, features = ["png", "jpeg"] }  # decode inline screenshots (t05)
+rusqlite = { workspace = true }  # read ~/.keisei/token-events.sqlite for the day-total token counter
+# Real BPE token counter for the context meter (embeds cl100k_base vocab —
+# works offline). 0.12 needs rustc 1.85; pin 0.11 for our 1.77 MSRV.
+tiktoken-rs = "0.11"
+
+[dev-dependencies]
+pretty_assertions = "1"
