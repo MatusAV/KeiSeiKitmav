@@ -30,6 +30,7 @@ substrate_core_binaries() {
     kei-entity-store kei-crossdomain kei-social-store \
     kei-chat-store kei-provision kei-changelog kei-migrate \
     kei-db-contract \
+    kei-registry kei-import-project kei-decompose \
     frustration-matrix \
     ssh-check firewall-diff
 }

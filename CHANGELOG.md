@@ -4,7 +4,24 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.70.0 just shipped)
+(none — v0.71.0 just shipped)
+
+## v0.71.0 — 2026-07-15
+
+Makes the substrate-encyclopedia binaries survive a clean reinstall. v0.70.0
+wired the encyclopedia hooks and installed `kei-registry` / `kei-import-project`
+/ `kei-decompose` by hand; this release wires their install into the substrate
+mirror so a fresh `./install.sh` puts them on PATH automatically.
+
+- **fix(install): mirror kei-registry / kei-import-project / kei-decompose to
+  ~/.cargo/bin** — added the three substrate-registry binaries to
+  `substrate_core_binaries()` in `install/lib-substrate.sh`. The workspace build
+  already produced them (they are workspace members), but the always-copy list
+  never mirrored them, so a clean install left the encyclopedia hooks
+  (`auto-register-on-edit` / `auto-encyclopedia-refresh` /
+  `decompose-rules-on-edit`) as no-ops for lack of their backing binary.
+  Verified end-to-end: the real `copy_prebuilt_substrate_binaries` now lands all
+  three in `~/.cargo/bin` (47 → 50 core binaries).
 
 ## v0.70.0 — 2026-07-15
 
