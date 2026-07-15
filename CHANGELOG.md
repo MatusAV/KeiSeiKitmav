@@ -4,7 +4,39 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.74.1 just shipped)
+(none — v0.75.0 just shipped)
+
+## v0.75.0 — 2026-07-16
+
+Maintenance + hardening cut from a full audit / cleanup / test pass.
+
+- **fix(primitive): kei-cron-scheduler standalone build.** The crate `#[derive]`d
+  `Serialize`/`Deserialize` on `DateTime<Utc>` but never enabled chrono's `serde`
+  feature — it compiled only via workspace feature unification (5 siblings enable
+  it), so `cargo test -p kei-cron-scheduler` failed standalone with 12 `E0277`
+  errors. Declared the feature (matching the siblings); 38 tests pass. Surfaced by
+  a full per-crate `cargo test` across the whole workspace.
+- **feat(ci): shell-integration job.** `tests/{hook_wiring, substrate_integration,
+  hook-outcome-backfill, gdrive_import}` were never CI-wired, so two had drifted
+  unseen: substrate's Phase-5 smoke check referenced pre-rename `kei-*.md`
+  filenames (manifests are bare-named now), and the backfill "no sqlite3" case only
+  passed while sqlite3 was absent from the box (`PATH=$JQ_DIR` still exposes it when
+  jq and sqlite3 share `/usr/bin`). Both repaired; the new job is the regression gate.
+- **fix(docs): DNA-INDEX regenerated repo-scoped (223 → 347).** The committed index
+  was stale (atom 4 vs the repo's real 114 `_blocks`) and had been rendered from a
+  registry polluted with installed-copy blocks under `~/.claude` (absolute machine
+  paths). Re-seeded repo-scoped via `kei-registry index-substrate`.
+- **fix(install): seed the registry repo-scoped.** `lib-registry-seed.sh` now runs
+  `kei-registry index-substrate "$KIT_DIR"` instead of `scan --rules-root
+  ~/.claude/rules --hooks-root ~/.claude/hooks` + `decompose-rules`, so a fresh
+  install no longer bakes machine paths into the committed encyclopedia.
+- **fix(ci): green on GitHub Actions.** Two `bash -e` interactions in workflow
+  `run:` blocks: the gdrive step's `cmd; ec=$?` aborted on the `SKIP=77` exit before
+  capturing it (→ `|| ec=$?`), and the rust-primitives swap-resize step's
+  `swapoff /swapfile` failed on runner images that ship without a pre-existing
+  swapfile (→ guarded with `|| true` + `rm -f`).
+
+Counters unchanged.
 
 ## v0.74.1 — 2026-07-15
 
