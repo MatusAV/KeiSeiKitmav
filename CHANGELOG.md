@@ -4,7 +4,22 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.73.0 just shipped)
+(none — v0.74.0 just shipped)
+
+## v0.74.0 — 2026-07-15
+
+Pulls two more items from `KeiTeam/keiseikit` (Denis, v0.38.0) — additive, by path.
+
+- **feat(primitive): kei-tui** — ratatui-based coding-agent TUI crate. Builds clean
+  in the workspace with voice disabled (`default = []`; the WSL host has no ALSA —
+  enable on an audio host with `--features voice`).
+- **feat(agent): reasoning-corpus-builder** — VRC gate agent (teacher-authored traces
+  → scrub → per-domain oracle → doctrine gate → assembly). Manifest ported to this
+  fork's assembler schema (`domain_in` / `forbidden_domain` / `output_extra_fields` /
+  `[taxonomy]` / `[lineage]` derived from the role text; `corpus`→`research` artifact,
+  `read-write`→`edit-local` role); block `rule-vrc-corpus-prep` pulled; `_generated`
+  composed by the assembler.
+- Counters: agents 38→39, blocks 84→85, crates 112→113.
 
 ## v0.73.0 — 2026-07-15
 
