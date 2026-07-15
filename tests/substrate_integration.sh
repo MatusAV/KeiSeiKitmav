@@ -197,13 +197,13 @@ for name in $MIGRATED; do
         || fail "$name: missing # BASELINE block after substrate (block order broken)"
 done
 
-echo "==> Phase 5 — smoke check: kei-code-implementer.md carries the policy::no-git-ops fragment…"
-grep -q 'You MUST NOT invoke `git`' "$GEN_ROOT/kei-code-implementer.md" \
-    || fail "kei-code-implementer substrate fragment (no-git-ops) missing"
+echo "==> Phase 5 — smoke check: code-implementer.md carries the policy::no-git-ops fragment…"
+grep -q 'You MUST NOT invoke `git`' "$GEN_ROOT/code-implementer.md" \
+    || fail "code-implementer substrate fragment (no-git-ops) missing"
 
-echo "==> Phase 5 — smoke check: kei-critic.md (read-only role) carries the tools::read-only fragment…"
-grep -q 'You MUST NOT use the `Edit` or `Write` tools' "$GEN_ROOT/kei-critic.md" \
-    || fail "kei-critic substrate fragment (read-only) missing"
+echo "==> Phase 5 — smoke check: critic.md (read-only role) carries the tools::read-only fragment…"
+grep -q 'You MUST NOT use the `Edit` or `Write` tools' "$GEN_ROOT/critic.md" \
+    || fail "critic substrate fragment (read-only) missing"
 
 echo "==> Phase 5 — kei-agent-runtime compose against an example task.toml…"
 EXAMPLE="$ROOT/_templates/task-examples/edit-local-forge.toml"

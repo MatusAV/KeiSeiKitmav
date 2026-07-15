@@ -176,3 +176,33 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y jq
       - name: Check repo SSOT invariants
         run: sh scripts/check-repo-ssot.sh
+
+  shell-integration:
+    # Regression gate for the tests/ shell integration suite. These drifted
+    # undetected through v0.74.x because they were never CI-wired:
+    # substrate_integration's smoke check referenced pre-rename `kei-*.md`
+    # filenames (manifests are bare-named now), and hook-outcome-backfill's
+    # "no sqlite3" case only passed while sqlite3 was absent from the box.
+    # Both build only targeted `-p` binaries + a workspace check — far lighter
+    # than the rust-primitives cargo-test job, so no mold/swap mitigation.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5  # v4.3.1
+      - uses: dtolnay/rust-toolchain@stable  # exception to SHA-pin rule: named-branch convention (see rust-assembler job rationale).
+      - uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4  # v2.9.1
+        with:
+          workspaces: |
+            _primitives/_rust
+            _assembler
+      - name: Install deps
+        run: sudo apt-get update && sudo apt-get install -y jq sqlite3
+      - name: hook wiring (capability-check contract)
+        run: bash tests/hook_wiring_integration.sh
+      - name: substrate assembly (migrated manifests)
+        run: bash tests/substrate_integration.sh
+      - name: agent outcome backfill (ledger UPDATE behaviour)
+        run: bash tests/hook-outcome-backfill-test.sh
+      - name: gdrive import (SKIP=77 when mocks/binary absent)
+        run: |
+          bash tests/gdrive_import_integration.sh; ec=$?
+          [ "$ec" -eq 0 ] || [ "$ec" -eq 77 ] || exit "$ec"

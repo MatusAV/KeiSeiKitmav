@@ -4,7 +4,10 @@
 # missing-marker no-op, bypass no-op, and missing-sqlite3 no-op.
 set -u
 
+# Prefer the installed hook; fall back to the repo copy so this runs in CI
+# (and any fresh checkout) without a full install.
 HOOK="$HOME/.claude/hooks/agent-outcome-backfill.sh"
+[ -x "$HOOK" ] || HOOK="$(cd "$(dirname "$0")/.." && pwd)/hooks/agent-outcome-backfill.sh"
 [ -x "$HOOK" ] || { echo "FAIL: hook not executable at $HOOK"; exit 1; }
 
 TMP=$(mktemp -d)
@@ -70,8 +73,12 @@ assert_eq "$OUT" "NULL" "bypass no-op"
 echo "[5] missing sqlite3 → no-op (PATH stripped)"
 sqlite3 "$DB" "INSERT OR REPLACE INTO agents(id,outcome,stubs_count) VALUES('id-nosql',NULL,0);"
 PAYLOAD=$(jq -nc --arg id "id-nosql" --arg body "$BODY" '{tool_use_id:$id,tool_response:$body}')
-JQ_DIR=$(dirname "$(command -v jq)")
-printf '%s' "$PAYLOAD" | env -i HOME="$HOME" KEI_LEDGER_DB="$DB" PATH="$JQ_DIR" "$HOOK" 2>/dev/null
+# Robust "sqlite3 absent" simulation: a PATH dir containing ONLY jq. Pointing
+# PATH at jq's real dir is not enough when jq and sqlite3 share one dir
+# (e.g. both in /usr/bin) — sqlite3 stays discoverable and the hook writes
+# instead of no-op'ing. Symlink just jq into a scratch dir and use that.
+JQ_ONLY="$TMP/jqonly"; mkdir -p "$JQ_ONLY"; ln -sf "$(command -v jq)" "$JQ_ONLY/jq"
+printf '%s' "$PAYLOAD" | env -i HOME="$HOME" KEI_LEDGER_DB="$DB" PATH="$JQ_ONLY" "$HOOK" 2>/dev/null
 OUT=$(sqlite3 "$DB" "SELECT IFNULL(outcome,'NULL') FROM agents WHERE id='id-nosql';")
 assert_eq "$OUT" "NULL" "no-sqlite3 no-op"
 
