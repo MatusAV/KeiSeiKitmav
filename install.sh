@@ -127,6 +127,8 @@ source "$LIB_DIR/lib-agents.sh"
 source "$LIB_DIR/lib-skills.sh"
 # shellcheck source=install/lib-rules.sh
 source "$LIB_DIR/lib-rules.sh"
+# shellcheck source=install/lib-registry-seed.sh
+source "$LIB_DIR/lib-registry-seed.sh"
 # shellcheck source=install/lib-wizard.sh
 source "$LIB_DIR/lib-wizard.sh"
 # shellcheck source=install/lib-pathway.sh
@@ -306,6 +308,11 @@ maybe_activate_hooks
 if [ "${ROLLED_BACK:-0}" = "1" ]; then
   exit 2
 fi
+
+# --- substrate registry seed ----------------------------------------------
+# Populate ~/.claude/registry.sqlite so the encyclopedia hooks regenerate a
+# complete docs/DNA-INDEX.md on the first substrate edit. Idempotent + non-fatal.
+seed_registry
 
 # --- optional post-install hooks ------------------------------------------
 [ "$WITH_BRIDGES"    = "1" ] && render_bridges

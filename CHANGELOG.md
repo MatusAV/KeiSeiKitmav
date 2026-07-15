@@ -4,7 +4,25 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.71.0 just shipped)
+(none — v0.72.0 just shipped)
+
+## v0.72.0 — 2026-07-15
+
+Completes encyclopedia-on-fresh-install: seeds the substrate registry during
+install so the first `docs/DNA-INDEX.md` regeneration is complete, not one block
+at a time.
+
+- **feat(install): seed substrate registry (install/lib-registry-seed.sh)** — a
+  new `seed_registry` step runs `kei-registry scan` over the installed substrate
+  (`--kit-root` + `~/.claude/{rules,hooks}`) to populate
+  `~/.claude/registry.sqlite`, wired into `install.sh` after
+  `maybe_activate_hooks`. Without it a fresh install left the DB empty, so the
+  v0.70.0 encyclopedia hooks rebuilt `DNA-INDEX.md` one block per edit.
+  Idempotent (scan no-ops on unchanged content and creates the DB if absent) and
+  strictly non-fatal: skips silently when `kei-registry` is absent (e.g. minimal
+  profile) or `KEI_SKIP_REGISTRY_SEED=1`. Also runs `kei-decompose
+  decompose-rules` when available. Verified end-to-end in an isolated `HOME`
+  (fresh DB → 217 blocks), plus the opt-out and binary-absent skip paths.
 
 ## v0.71.0 — 2026-07-15
 
