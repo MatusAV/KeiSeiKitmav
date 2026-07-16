@@ -4,7 +4,25 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.75.0 just shipped)
+(none — v0.76.0 just shipped)
+
+## v0.76.0 — 2026-07-16
+
+Fix cut: the `kei` splash misreported the install profile.
+
+- **fix(install): non-interactive default no longer relabels the profile stamp.**
+  A bare non-TTY `install.sh` run (no `--profile`, no interactive menu) defaults
+  `PROFILE=minimal` and used to stamp `minimal` into `~/.claude/.kei-profile`
+  unconditionally. But minimal's fast path skips the rust phase and uninstalls
+  nothing, so a full/cortex substrate got silently mislabelled `minimal` and the
+  `kei` splash printed `profile : minimal` over a healthy install. The stamp write
+  is now guarded (`PROFILE_EXPLICIT`): it only (re)writes when the profile was
+  explicitly chosen (`--profile` flag or the interactive menu) or when no stamp
+  exists yet; a non-interactive default preserves an existing richer stamp instead
+  of downgrading it. Verified across three paths — preserve-richer, explicit
+  overwrite, fresh→minimal.
+
+Counters unchanged.
 
 ## v0.75.0 — 2026-07-16
 
