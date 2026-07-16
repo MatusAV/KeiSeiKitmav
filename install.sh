@@ -194,6 +194,14 @@ fi
 run_menu_if_needed || exit 1
 
 # --- resolve profile (default=minimal) -----------------------------------
+# Capture whether the profile was EXPLICITLY selected (--profile flag, or the
+# interactive menu which sets PROFILE before this point) vs about to be
+# defaulted. A bare non-TTY run defaults to minimal, whose fast path skips the
+# rust phase entirely (no primitives built or removed) — so writing that
+# default over an existing richer stamp silently relabels a full/cortex
+# substrate as "minimal". The stamp write below is guarded on this flag.
+PROFILE_EXPLICIT=0
+[ -n "${PROFILE:-}" ] && PROFILE_EXPLICIT=1
 PROFILE="${PROFILE:-minimal}"
 case "$PROFILE" in
   minimal|core|frontend|ops|dev|mcp|cortex|full|custom|local-mirror|dashboard|full-hub|outcome-only) ;;
@@ -203,9 +211,19 @@ case "$PROFILE" in
     ;;
 esac
 say "profile: $PROFILE"
-# Stamp the chosen profile so `kei` splash + tools can show it (bin/kei reads this).
+# Stamp the chosen profile so `kei` splash + tools can show it (bin/kei reads
+# this). Only (re)write when the profile was explicitly chosen or no stamp
+# exists yet — never let a non-interactive minimal DEFAULT downgrade an existing
+# stamp, since minimal's fast path uninstalls nothing (it would misreport a
+# full/cortex substrate as minimal).
 mkdir -p "$HOME_DIR/.claude" 2>/dev/null || true
-printf '%s\n' "$PROFILE" > "$HOME_DIR/.claude/.kei-profile" 2>/dev/null || true
+_kei_stamp="$HOME_DIR/.claude/.kei-profile"
+if [ "$PROFILE_EXPLICIT" = "1" ] || [ ! -f "$_kei_stamp" ]; then
+  printf '%s\n' "$PROFILE" > "$_kei_stamp" 2>/dev/null || true
+else
+  say "  keeping existing profile stamp '$(head -1 "$_kei_stamp" 2>/dev/null)' (non-interactive default '$PROFILE' would downgrade it)"
+fi
+unset _kei_stamp
 # Stamp the kit checkout dir so `kei configure` can re-source the libs later.
 printf '%s\n' "$KIT_DIR" > "$HOME_DIR/.claude/.kei-kit-dir" 2>/dev/null || true
 
