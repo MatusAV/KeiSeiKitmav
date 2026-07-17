@@ -7,7 +7,34 @@
 
 ---
 
-## STATUS BANNER (post-audit, 2026-04-28 — RULE 0.16 self-application)
+## STATUS RE-VERIFIED — 2026-07-16 (supersedes the April banner below)
+
+> **The 2026-04-28 banner is stale.** A live code re-check on 2026-07-16 confirms
+> that **5 of the 6 "functional follow-ups" shipped** since April; only the
+> multi-platform **gateway adapters (P4.1.b)** remain a stub. Read this block
+> first — the April table further down is preserved as the original audit record.
+
+| Follow-up | April status | **2026-07-16 reality** | Evidence (file:line) |
+|---|---|---|---|
+| P1.1.b OpenAI-compat | echo stubs, unwired | ✅ **functional** | `routes/openai/chat_completions.rs` → real `handle_stream`; `handlers/chat.rs:62` wires `run_loop_stream` |
+| P2.1.b injection-guard | wired to backlog only | ✅ **functional** | `injection_guard::scan` on the real write path `kei-memory/src/ingest.rs:155` (+ `backlog.rs:27`) |
+| P2.2.b memory-nudge | dead code, no `Invoker` | ✅ **functional** | `kei-cortex/src/anthropic_invoker.rs` impls `Invoker`; `state.rs` plumbs `InvokerFactory` / `build_memory_invoker`; `handlers/chat_memory_nudge.rs` fires `maybe_trigger` |
+| P3.1.b kei-skills SSoT | walkdir bypass | ✅ **functional** | `kei-mcp/src/protocol.rs:73` "replaces the prior raw walkdir scan"; `handlers/resources.rs` reads via `SkillRegistry` |
+| P0.2.b multi-turn export | 3-turn hardcode, no `From::Tool` | ✅ **functional** | `kei-export-trajectories/src/builder.rs:36` synthesizes multi-turn; `builder_chatlog_parse.rs:150` emits `ShareGptFrom::Tool` |
+| P4.1.b gateway adapters | 9× `todo!()` | ❌ **STILL STUB** | `kei-gateway/src/lib.rs:8` "feature-gated stubs"; only `adapters/cli.rs` is real |
+
+**Also advanced past the April table (were not on the follow-up list):**
+- **P1.2 Daytona** — crate `kei-backend-daytona` is now real (`backend_sync.rs`, `cost_guard.rs`, `error.rs`) with 3 test files incl. `file_sync_wiring.rs` (the April gap). Re-verify `Backend`-trait dispatch before calling it fully functional.
+- **P3.4 kei-ledger skill metrics** — no longer write-only: `skill_metrics.rs:35` INSERTs into `skill_invocations`; consumers now exist (`skill_aggregator_cli.rs`, `kei-graph-export`).
+- **P4.2 kei-cron-scheduler** — now **functional** (0 stubs; `parser`/`job`/`runner`/`store` real; chrono/serde fixed + CI-wired in v0.75.0).
+
+**Genuinely remaining:**
+1. **P4.1.b** — real teloxide / serenity / slack-morphism adapter bodies (feature-gated scaffolds exist; ~3–4 days each).
+2. **Phase D (P3.2 / P3.3)** — trajectory→skill auto-extraction was never built (no `extraction_trigger.rs` in tree); the strategic 4–6 week item, separate go/no-go.
+
+---
+
+## STATUS BANNER (post-audit, 2026-04-28 — RULE 0.16 self-application) — SUPERSEDED, see 2026-07-16 re-verification above
 
 > **SCAFFOLDING SHIPPED — ~52% functional coverage across 7 phases.**
 > Honest reconciliation after `feat/hermes-batch-2026-04-28` audit by 7 kei-critic agents.
@@ -29,7 +56,7 @@
 
 **RULE 0.16 SHIPPED-VS-FUNCTIONAL DRIFT** codified 2026-04-28 in response to this audit. Three layers: agent STATUS-TRUTH MARKER footer + `~/.claude/hooks/agent-stub-scan.sh` (WARN 7d → ENFORCE) + orchestrator pre-commit cargo gate. Belt+suspenders+chastity-belt against repeating this drift.
 
-**Functional follow-ups (in priority order)** to take any phase from `partial`/`scaffolding` to `functional`:
+**Functional follow-ups (in priority order)** to take any phase from `partial`/`scaffolding` to `functional`: — *(SUPERSEDED: 5 of 6 shipped by 2026-07-16; only P4.1.b remains — see top-of-file re-verification)*
 - P1.1.b: wire `chat_stream::run_loop_stream` into OpenAI handlers (~4-8h) — biggest user-visible win
 - P2.1.b: re-wire injection_guard to `ingest::insert_event` + `kei-pet::memory` real write paths (~2h)
 - P2.2.b: implement `Invoker` for `kei-anthropic` + plumb `MemoryStore` Arc + call `maybe_trigger` from chat handler (~1d)
