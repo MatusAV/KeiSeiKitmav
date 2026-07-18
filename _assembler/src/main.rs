@@ -1,8 +1,13 @@
-//! CLI entry: build [--validate] [--in-place] [<manifest.toml> ...]
+//! CLI entry: build [--help] [--validate] [--dry-run] [--in-place] [<manifest.toml> ...]
 //!
 //! Default: read all _manifests/*.toml, write to _generated/*.md.
+//! --help: print usage and exit 0. No filesystem access beyond argv.
 //! --in-place: write to agents/<name>.md (replaces generated file).
 //! --validate: parse + validate only, no output.
+//! --dry-run: parse + validate + render, but do not write; prints what
+//!   would be written instead. Unlike an unrecognized flag (previously
+//!   silently dropped, falling through to a real write), this is a
+//!   guaranteed no-filesystem-write path.
 //! Positional args: specific manifest files to process.
 
 mod assembler;
@@ -18,14 +23,44 @@ use std::path::{Path, PathBuf};
 use std::process::ExitCode;
 use std::{env, fs};
 
+const USAGE: &str = "\
+assemble — KeiSeiKit agent manifest assembler
+
+USAGE:
+    assemble [FLAGS] [MANIFEST...]
+
+FLAGS:
+    --help, -h    Print this help and exit 0. No filesystem access.
+    --validate    Parse + validate manifests only. Nothing is written.
+    --dry-run     Parse, validate, and render, but do not write files.
+                  Prints the path and size of what would be written.
+    --in-place    Write to agents/<name>.md (the live-served manifest)
+                  instead of the default _generated/<name>.md cache.
+
+ARGS:
+    MANIFEST...   Specific _manifests/*.toml files to process.
+                  Default: every manifest under _manifests/.
+
+Running `assemble` with no flags performs a REAL WRITE of every manifest
+to _generated/*.md (or agents/*.md with --in-place). Use --validate or
+--dry-run first if you just want to check what a build would do.
+";
+
 fn main() -> ExitCode {
+    let args: Vec<String> = env::args().skip(1).collect();
+
+    if args.iter().any(|a| a == "--help" || a == "-h") {
+        print!("{USAGE}");
+        return ExitCode::SUCCESS;
+    }
+
     let root = root_dir();
     let blocks = root.join("_blocks");
     let manifests = root.join("_manifests");
     let generated = root.join("_generated");
 
-    let args: Vec<String> = env::args().skip(1).collect();
     let validate_only = args.iter().any(|a| a == "--validate");
+    let dry_run = args.iter().any(|a| a == "--dry-run");
     let in_place = args.iter().any(|a| a == "--in-place");
     let targets: Vec<&String> = args.iter().filter(|a| !a.starts_with("--")).collect();
 
@@ -42,13 +77,21 @@ fn main() -> ExitCode {
 
     let mut errors = 0u32;
     for path in &paths {
-        match process(path, &blocks, &generated, &root, validate_only, in_place) {
-            Ok(out_path) => {
+        match process(path, &blocks, &generated, &root, validate_only, dry_run, in_place) {
+            Ok(Outcome::Skipped) => {
                 let name = path.file_name().unwrap_or_default().to_string_lossy();
-                match out_path {
-                    Some(p) => println!("OK  {name} → {}", relative_to(&p, root.parent().unwrap_or(root.as_path()))),
-                    None => println!("OK  {name}"),
-                }
+                println!("OK  {name}");
+            }
+            Ok(Outcome::Written(p)) => {
+                let name = path.file_name().unwrap_or_default().to_string_lossy();
+                println!("OK  {name} → {}", relative_to(&p, root.parent().unwrap_or(root.as_path())));
+            }
+            Ok(Outcome::WouldWrite(p, bytes)) => {
+                let name = path.file_name().unwrap_or_default().to_string_lossy();
+                println!(
+                    "DRY-RUN OK  {name} → {} ({bytes} bytes, not written)",
+                    relative_to(&p, root.parent().unwrap_or(root.as_path()))
+                );
             }
             Err(e) => {
                 eprintln!("FAIL {}: {e}", path.display());
@@ -60,31 +103,45 @@ fn main() -> ExitCode {
     if errors > 0 { ExitCode::from(1) } else { ExitCode::SUCCESS }
 }
 
+enum Outcome {
+    Skipped,
+    Written(PathBuf),
+    WouldWrite(PathBuf, usize),
+}
+
 fn process(
     path: &Path,
     blocks: &Path,
     generated: &Path,
     root: &Path,
     validate_only: bool,
+    dry_run: bool,
     in_place: bool,
-) -> Result<Option<PathBuf>, String> {
+) -> Result<Outcome, String> {
     let text = fs::read_to_string(path).map_err(|e| format!("read: {e}"))?;
     let m: Manifest = toml::from_str(&text).map_err(|e| format!("parse: {e}"))?;
     validator::validate(&m, blocks)?;
 
     if validate_only {
-        return Ok(None);
+        return Ok(Outcome::Skipped);
     }
 
     let content = assembler::assemble(&m, blocks)?;
     let out_path = if in_place {
         root.join(format!("{}.md", m.name))
     } else {
-        fs::create_dir_all(generated).map_err(|e| format!("mkdir generated: {e}"))?;
         generated.join(format!("{}.md", m.name))
     };
+
+    if dry_run {
+        return Ok(Outcome::WouldWrite(out_path, content.len()));
+    }
+
+    if !in_place {
+        fs::create_dir_all(generated).map_err(|e| format!("mkdir generated: {e}"))?;
+    }
     fs::write(&out_path, content).map_err(|e| format!("write {}: {e}", out_path.display()))?;
-    Ok(Some(out_path))
+    Ok(Outcome::Written(out_path))
 }
 
 fn root_dir() -> PathBuf {

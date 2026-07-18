@@ -93,6 +93,37 @@ check_ledger_schema() {
     || _warn "ledger.sqlite missing agents table" "kei-ledger migrate may be needed"
 }
 
+# Rule/hook drift check: rules/*.md may claim `<script>.sh` (EVENT) is an
+# active enforcement hook (e.g. rust-first.md: "rust-first.sh (UserPromptSubmit)
+# -- reminds on language-choice keywords"). That claim can silently go stale
+# if the hook is never wired into settings.json, or gets removed later --
+# exactly what happened to rust-first.sh before the 2026-07-18 audit fixed
+# it. Cross-check every such claim against the live settings.json.
+check_rule_hook_drift() {
+  local rules_dir="$HOME_DIR/.claude/rules" settings="$HOME_DIR/.claude/settings.json"
+  [ -d "$rules_dir" ] || { _warn "$rules_dir missing" "cannot check rule/hook drift"; return 0; }
+  command -v jq >/dev/null 2>&1 || { _warn "jq missing" "cannot check rule/hook drift"; return 0; }
+  [ -f "$settings" ] || { _warn "$settings missing" "cannot check rule/hook drift"; return 0; }
+
+  local any=0 file line match script event wired
+  while IFS=: read -r file line match; do
+    any=1
+    script=$(printf '%s' "$match" | sed -E 's/.*`([a-zA-Z0-9_-]+\.sh)`.*/\1/')
+    event=$(printf '%s' "$match" | sed -E 's/.*\(([A-Za-z]+)\).*/\1/')
+    wired=$(jq -r --arg ev "$event" --arg s "$script" \
+      '[(.hooks[$ev] // [])[].hooks[]?.command // empty] | any(contains($s))' \
+      "$settings" 2>/dev/null)
+    if [ "$wired" = "true" ]; then
+      _pass "$(basename "$file"):$line -- $script ($event) wired in settings.json"
+    else
+      _warn "$(basename "$file"):$line claims $script ($event) is active" \
+        "not found under settings.json .hooks.$event -- wire it or correct the rule doc"
+    fi
+  done < <(grep -rnoE '`[a-zA-Z0-9_-]+\.sh`[[:space:]]*\([A-Za-z]+\)' "$rules_dir" 2>/dev/null)
+
+  [ "$any" -eq 0 ] && _pass "no rule/hook enforcement claims found to check"
+}
+
 [ "$QUIET" = "1" ] || printf '%skei-doctor%s — substrate health check\n' "$DIM" "$CL"
 
 _section "substrate binaries on PATH"
@@ -125,6 +156,9 @@ check_env_var ANTHROPIC_API_KEY "$SECRETS_FILE"
 check_env_var ELEVENLABS_API_KEY "$SECRETS_FILE"
 check_env_var FAL_KEY            "$SECRETS_FILE"
 check_env_var ZAI_API_KEY        "$SECRETS_FILE"   # Z.ai GLM backend (optional)
+
+_section "rule/hook drift (doc claims vs settings.json)"
+check_rule_hook_drift
 
 echo
 if [ "$FAIL_COUNT" -eq 0 ]; then

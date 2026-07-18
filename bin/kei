@@ -210,24 +210,54 @@ profile_name() {
   if [ -f "$f" ]; then head -1 "$f"; else echo "?"; fi
 }
 
-# Last Phase B sleep timestamp
+# Last sleep run — checks BOTH pipelines and reports whichever is newer:
+#   - remote/hybrid Phase B: ${SYNC_DIR}/reports/last-run.txt (epoch, written
+#     by kei-sleep-sync.sh)
+#   - local-only cron: newest dated report in ~/sleep-reports/, written by
+#     nightly-sleep.sh (sleep-report-*.md) / weekly-deep-sleep.sh
+#     (deep-sleep-plan-*.md) — these scripts use dated filenames instead of
+#     a stable marker file, so we take the most recently modified match.
+# Previously this only checked the remote path, so local-only installs
+# (no KEI_MEMORY_REPO_* configured) showed a permanent "never" even with a
+# genuinely scheduled and eventually-firing cron.
 last_sleep_run() {
-  local f="${SYNC_DIR}/reports/last-run.txt"
-  if [ -f "$f" ]; then
-    local ts
-    ts=$(cat "$f" 2>/dev/null | head -1)
-    if [ -n "$ts" ]; then
-      # epoch → human; macOS date(1) -r and Linux date(1) -d differ
-      if date -r "$ts" '+%Y-%m-%d %H:%M' >/dev/null 2>&1; then
-        date -r "$ts" '+%Y-%m-%d %H:%M'
-      elif date -d "@$ts" '+%Y-%m-%d %H:%M' >/dev/null 2>&1; then
-        date -d "@$ts" '+%Y-%m-%d %H:%M'
-      else
-        echo "$ts"
-      fi
-    else
-      echo "never"
+  local remote_f="${SYNC_DIR}/reports/last-run.txt" remote_ts="" local_dir="${HOME}/sleep-reports" local_ts="" newest
+
+  if [ -f "$remote_f" ]; then
+    remote_ts=$(cat "$remote_f" 2>/dev/null | head -1)
+  fi
+
+  if [ -d "$local_dir" ]; then
+    newest=$(ls -t "$local_dir"/sleep-report-*.md "$local_dir"/deep-sleep-plan-*.md 2>/dev/null | head -1)
+    if [ -n "$newest" ]; then
+      # mtime → epoch; GNU stat (Linux) vs BSD/macOS stat differ
+      local_ts=$(stat -c %Y "$newest" 2>/dev/null || stat -f %m "$newest" 2>/dev/null)
     fi
+  fi
+
+  local ts=""
+  if [ -n "$remote_ts" ] && [ -n "$local_ts" ]; then
+    if [ "$remote_ts" -ge "$local_ts" ] 2>/dev/null; then ts="$remote_ts"; else ts="$local_ts"; fi
+  elif [ -n "$remote_ts" ]; then
+    ts="$remote_ts"
+  elif [ -n "$local_ts" ]; then
+    ts="$local_ts"
+  fi
+
+  if [ -n "$ts" ]; then
+    # epoch → human; macOS date(1) -r and Linux date(1) -d differ
+    if date -r "$ts" '+%Y-%m-%d %H:%M' >/dev/null 2>&1; then
+      date -r "$ts" '+%Y-%m-%d %H:%M'
+    elif date -d "@$ts" '+%Y-%m-%d %H:%M' >/dev/null 2>&1; then
+      date -d "@$ts" '+%Y-%m-%d %H:%M'
+    else
+      echo "$ts"
+    fi
+    return
+  fi
+
+  if crontab -l 2>/dev/null | grep -qE "nightly-sleep\.sh|weekly-deep-sleep\.sh"; then
+    echo "never (local cron configured, awaiting first run)"
   else
     echo "never"
   fi

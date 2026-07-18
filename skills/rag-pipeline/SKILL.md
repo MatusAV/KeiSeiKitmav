@@ -1,4 +1,3 @@
-<!-- migrated from skills/rag-pipeline/skill.md (lowercase legacy filename) on 2026-05-02 -->
 ---
 name: rag-pipeline
 description: Use when building RAG (Retrieval-Augmented Generation) systems — embedding pipeline, vector database, document ingestion, semantic search, hybrid search. Triggers on "RAG", "embeddings", "vector search", "semantic search", "document ingestion", "knowledge base".
