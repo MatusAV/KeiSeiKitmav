@@ -263,6 +263,11 @@
           },
           {
             "type": "command",
+            "command": "~/.claude/hooks/truthfulness-guard.sh",
+            "statusMessage": "truthfulness remind (RULE 0.24)..."
+          },
+          {
+            "type": "command",
             "command": "~/.claude/scripts/keisei-pet-update.sh prompt"
           },
           {
