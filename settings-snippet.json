@@ -191,6 +191,16 @@
         ]
       },
       {
+        "matcher": "mcp__kei__kei_write|mcp__kei__kei_edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/default-change-guard.sh",
+            "statusMessage": "default-change-guard (RULE 0.25, MCP write path)..."
+          }
+        ]
+      },
+      {
         "matcher": "Read",
         "hooks": [
           {
