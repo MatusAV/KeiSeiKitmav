@@ -1,18 +1,18 @@
 # KeiSeiKit DNA Encyclopedia
 
-> Auto-generated from kei-registry. Last regenerated: 2026-07-22T09:12:41Z.
-> Total blocks: 349. Per-type breakdown:
+> Auto-generated from kei-registry. Last regenerated: 2026-07-22T10:57:29Z.
+> Total blocks: 351. Per-type breakdown:
 
 | Type | Count |
 |---|---:|
 | atom | 114 |
-| hook | 55 |
-| primitive | 113 |
+| hook | 56 |
+| primitive | 114 |
 | skill | 67 |
 
 ---
 
-## Primitive (113)
+## Primitive (114)
 
 Sorted alphabetically by name.
 
@@ -44,6 +44,7 @@ Sorted alphabetically by name.
 | kei-contacts-google | primitive::md,networ… | _primitives/_rust/kei-contacts-google/Cargo.toml | fdda0220 |
 | kei-content-store | primitive::cli,hash,… | _primitives/_rust/kei-content-store/Cargo.toml | b9523105 |
 | kei-cortex | primitive::cli,fs,md… | _primitives/_rust/kei-cortex/Cargo.toml | b3d45ed1 |
+| kei-cortex::kei-cortex | primitive::_::c349ce… | _primitives/_rust/kei-cortex/Cargo.toml | 7a739e99 |
 | kei-cron-scheduler | primitive::md,networ… | _primitives/_rust/kei-cron-scheduler/Cargo.toml | 4807fbcf |
 | kei-crossdomain | primitive::cli,md,sq… | _primitives/_rust/kei-crossdomain/Cargo.toml | ae582e4c |
 | kei-curator | primitive::cli,md,sq… | _primitives/_rust/kei-curator/Cargo.toml | 2f307d65 |
@@ -206,7 +207,7 @@ Sorted alphabetically by name.
 | Web Effects Skill | md | skill::md::899492e4:… | skills/web-effects/SKILL.md |
 | nano-banana | md | skill::md::0c3a8d28:… | skills/nano-banana/SKILL.md |
 
-## Hook (55)
+## Hook (56)
 
 Sorted alphabetically by name.
 
@@ -233,6 +234,7 @@ Sorted alphabetically by name.
 | chat-numeric-prewarn | shell | hook::shell::4bf6f9e… | hooks/chat-numeric-prewarn.sh |
 | citation-verify | shell | hook::shell::87c6166… | hooks/citation-verify.sh |
 | decompose-rules-on-edit | shell | hook::shell::bb40211… | hooks/decompose-rules-on-edit.sh |
+| default-change-guard | shell | hook::shell::84ec1dc… | hooks/default-change-guard.sh |
 | destructive-guard | shell | hook::shell::73ec955… | hooks/destructive-guard.sh |
 | disk-headroom-check | shell | hook::shell::0df21dd… | hooks/disk-headroom-check.sh |
 | disk-reclaim | shell | hook::shell::b94431e… | hooks/disk-reclaim.sh |
@@ -393,6 +395,8 @@ Sorted alphabetically by name.
 
 ## Supersede chains
 
+- `default-change-guard` — 5 versions: 7f6d55c6 → 109b553a → e8dfa1f4 → 64332691 → 275ec184
+- `kei-cortex::kei-cortex` — 33 versions: 809c737a → d1e17cc9 → d88dadd4 → 5dd68fd2 → 1d37f8ce → 8190ba3b → ee671cbb → 1d1b6a31 → c3f2188a → 5735aba7 → 3a596051 → caebe7ad → ac5b0b4c → c299906a → b2258e46 → 0a751c3f → 2f75a965 → 6808b80b → 49181bc1 → fe0c4ccc → 25011025 → 280ed0d4 → b733ef21 → bddde50f → 07179846 → f15882e6 → 2b1b9718 → fcfd2d52 → e7b6e63a → 429e8bbc → 68787598 → 439250d5 → 7a739e99
 - `kei-mcp` — 2 versions: 5c5fb8c4 → 5c5fb8c4
 - `kei-mcp::kei-mcp` — 4 versions: f8e9c2cb → b7d61746 → d6077682 → e6a6b7fb
 

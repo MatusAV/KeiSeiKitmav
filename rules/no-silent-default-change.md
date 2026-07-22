@@ -55,12 +55,25 @@ Bulk / coding → **GLM**, judgment → **Opus**. Источник: `~/.claude/C
 
 ## Enforcement
 
-- Хук: `~/.claude/hooks/default-change-guard.sh` — PreToolUse на
-  `Write|Edit|mcp__kei__kei_write|mcp__kei__kei_edit`, severity **enforce**
-  (exit 2, правка блокируется). Сравнивает дефолт-декларации в старом и новом
-  тексте; срабатывает только когда значение реально меняется, не на упоминание.
-- Bypass: `DEFAULT_CHANGE_APPROVED=1` — ставится **после** ответа пользователя
-  в `AskUserQuestion`, а не вместо вопроса.
+- Хук: `~/.claude/hooks/default-change-guard.sh`, severity **enforce**
+  (exit 2, вызов отклоняется). Зарегистрирован на PreToolUse тремя матчерами,
+  потому что писать в файл можно тремя разными способами:
+
+  | матчер | что видит | как решает |
+  |---|---|---|
+  | `Write\|Edit` | старый и новый текст | блокирует, только когда объявленное значение **реально сдвинулось**; упоминание дефолта в добавленной прозе не считается |
+  | `mcp__kei__kei_write\|mcp__kei__kei_edit` | то же | та же логика — MCP это полноценный путь записи |
+  | `Bash` | только текст команды | старого значения нет, поэтому грубее: **команда пишет в файл** И в её тексте есть дефолт-декларация |
+
+  Bash-ветку добавили не из полноты: 2026-07-22 структурный гейт был обойдён
+  именно через `python3`-heredoc в Bash, когда правку `providers.toml` не
+  пропустил `Edit`. Дыра закрыта в тот же день.
+
+- Bypass — ставится **после** ответа пользователя, а не вместо вопроса:
+  - структурные пути: `export DEFAULT_CHANGE_APPROVED=1`;
+  - Bash: префикс в самой команде — `DEFAULT_CHANGE_APPROVED=1 sed -i …`.
+    Переменная, выставленная снаружи, в транскрипте не видна, а префикс виден:
+    согласие должно проверяться так же легко, как сама правка.
 - Уважает общий рубильник KeiSeiKit (`kei_hook_gate`), гасится через
   `/hooks-control`.
 - Смежное: RULE 0.24 (труднопроверяемые утверждения), RULE 0.8 (секреты).
@@ -72,8 +85,18 @@ Bulk / coding → **GLM**, judgment → **Opus**. Источник: `~/.claude/C
 - `printf '{"tool_name":"Edit","tool_input":{"file_path":"/x/a.ts","old_string":"const a = 1","new_string":"const a = 2"}}' | ~/.claude/hooks/default-change-guard.sh; echo $?`
   → пусто, код **0** (обычная правка не блокируется).
 - `DEFAULT_CHANGE_APPROVED=1` на первом входе → пусто, код **0**.
-- Регистрация: `jq -r '[.hooks.PreToolUse[].hooks[].command] | map(select(test("default-change-guard")))' ~/.claude/settings.json`
-  → непустой массив.
+- Bash-ветка: `printf '%s' 'sed -i "s/primary = \"claude\"/primary = \"glm\"/" /x/providers.toml' | jq -Rs '{tool_name:"Bash",tool_input:{command:.}}' | ~/.claude/hooks/default-change-guard.sh; echo $?`
+  → `[RULE 0.25 BLOCK]`, код **2**. Та же команда с префиксом
+  `DEFAULT_CHANGE_APPROVED=1` → код **0**. Чтение (`grep …`) → код **0**.
+- Исключение для git-истории не должно открывать лазейку:
+  `git commit -F -` с примером дефолта в сообщении → **0**, а
+  `git add . && sed -i "s/primary = \"claude\"/primary = \"glm\"/" f` → **2**.
+- Глубина экранирования: `python3 -c "open(\"f\",\"w\").write(\"primary = \\\"glm\\\"\")"`
+  → **2**. Кавычка в shell приезжает под одним или двумя слешами; шаблон
+  допускает любое их число (`\\*`), иначе гейт молча пропускает.
+- Регистрация — ровно три матчера:
+  `jq -r '.hooks.PreToolUse[] | select((.hooks[].command // "") | test("default-change-guard")) | .matcher' ~/.claude/settings.json`
+  → `Edit|Write`, `mcp__kei__kei_write|mcp__kei__kei_edit`, `Bash`.
 - Канон на месте: `grep -n "provider: 'glm'" ~/keiseikit-web/src/lib/config.ts`
   → строка 107.
 - Синхронизация кит → install: `diff -q ~/keisei/rules/no-silent-default-change.md ~/.claude/rules/no-silent-default-change.md`
