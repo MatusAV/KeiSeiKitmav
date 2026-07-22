@@ -18,7 +18,8 @@ count_rust_crates() {
   # workspace members + excluded standalone crates. kei-model-router is excluded
   # only because it declares its own nested [workspace] (Cargo refuses it as a
   # member), but it still ships as a crate — so it counts toward "Rust crates"
-  # (108 members + 1 excluded = 109, matching README's "By the numbers").
+  # (members + excluded). README carries the number in a count:RUST_CRATES
+  # marker, so it is regenerated here rather than hand-maintained.
   awk '
     /^\[workspace\]/                     { in_ws=1; next }
     /^\[/                                { in_ws=0 }

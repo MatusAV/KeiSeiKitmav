@@ -51,7 +51,7 @@ sleep consolidates 30-session windows into morning markdown reports.
 
 ## By the numbers
 
-109 Rust crates · <!-- count:SKILLS -->69<!-- /count:SKILLS --> skills · <!-- count:HOOKS -->55<!-- /count:HOOKS --> hooks · <!-- count:AGENTS -->39<!-- /count:AGENTS --> agent manifests ·
+<!-- count:RUST_CRATES -->113<!-- /count:RUST_CRATES --> Rust crates · <!-- count:SKILLS -->69<!-- /count:SKILLS --> skills · <!-- count:HOOKS -->55<!-- /count:HOOKS --> hooks · <!-- count:AGENTS -->39<!-- /count:AGENTS --> agent manifests ·
 <!-- count:BLOCKS -->85<!-- /count:BLOCKS --> substrate blocks · 11 install profiles (minimal → full).
 
 ## Platforms
@@ -366,7 +366,7 @@ private repo for productisation.
 
 ## Architecture
 
-Stack: **Rust core** (109 Rust crates — 108 workspace + 1 standalone
+Stack: **Rust core** (<!-- count:RUST_CRATES -->113<!-- /count:RUST_CRATES --> Rust crates — 112 workspace + 1 standalone
 sub-workspace, ≤2 MB each, 12-trait runtime
 + plugin registry) + **TypeScript glue** (6 adapters: gmail / grok /
 recall / telegram / youtube / mcp-server). Backend impls cover:
