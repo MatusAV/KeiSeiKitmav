@@ -4,6 +4,18 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
+- **feat(rule): RULE 0.25 — a default is the user's canon, not mine to retune.**
+  `rules/no-silent-default-change.md` plus a `hooks/default-change-guard.sh`
+  PreToolUse gate at enforce severity: an Edit/Write that rewrites a declared
+  default — LLM provider/model, agent routing, default agent or profile, pinned
+  port, sandbox flag — is refused with `exit 2` until the user has been asked.
+  The gate fires on a value actually moving old → new, so prose that merely
+  mentions a provider, and a first-time declaration where no default stood,
+  both pass. Its own rule and hook text are exempt — they quote the defaults
+  they describe. Bypass is `DEFAULT_CHANGE_APPROVED=1`, set *after* the answer,
+  never instead of the question. Incident of record: the keiseikit-web provider
+  default flipped glm → claude on a transient backend failure.
+
 - **fix(test): `tests/install/test-pathway.sh` could never pass.** Its
   `_count_begins` helper ran `grep -c … || echo 0`, but `grep -c` on zero
   matches *prints* `0` and *exits 1* — so the fallback fired on top of grep's

@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin.json",
   "name": "keisei",
   "displayName": "KeiSei",
-  "description": "Constructor Pattern multi-LLM agent substrate — 39 agents, 69 skills, 55 hooks, 85 blocks. Cross-CLI policy enforcement (Claude/Grok/Copilot/Agy/Kimi) via kei-mcp + kei_bash/kei_edit/kei_write. Rust primitives via classic ./install.sh.",
+  "description": "Constructor Pattern multi-LLM agent substrate — 39 agents, 69 skills, 56 hooks, 85 blocks. Cross-CLI policy enforcement (Claude/Grok/Copilot/Agy/Kimi) via kei-mcp + kei_bash/kei_edit/kei_write. Rust primitives via classic ./install.sh.",
   "version": "0.77.1",
   "homepage": "https://keilab.io",
   "repository": "https://github.com/KeiSeiLab/KeiSeiKit.git",

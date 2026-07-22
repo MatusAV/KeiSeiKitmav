@@ -182,6 +182,11 @@
             "type": "command",
             "command": "~/.claude/hooks/secrets-pre-guard.sh",
             "statusMessage": "secrets-pre-guard (RULE 0.8)..."
+          },
+          {
+            "type": "command",
+            "command": "~/.claude/hooks/default-change-guard.sh",
+            "statusMessage": "default-change-guard (RULE 0.25)..."
           }
         ]
       },
