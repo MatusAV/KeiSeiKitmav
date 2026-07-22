@@ -40,7 +40,7 @@
 | LLM-провайдер / модель | `DEFAULT_PREFS.provider`, `--default-provider`, `kei primary`, `ANTHROPIC_MODEL`, `model =` в `providers.toml` |
 | Маршрутизация агентов | `provider = "glm"` в `~/.claude/_manifests/*.toml` |
 | Дефолтный агент / профиль | `defaultAgent`, `--profile` инсталлятора, `KEI_HOOK_PROFILE` |
-| Порты и адреса | закреплённая карта портов (5173 / 9796 / 9797 / 9799 / 9801); 9800+ — пул тенантов, раздаётся автоматически (`keiseikit-web/deploy/new-tenant.sh:146`) |
+| Порты и адреса | закреплённая карта портов (5173 / 9797 / 9799 / 9801); 9800+ — пул тенантов, раздаётся автоматически (`keiseikit-web/deploy/new-tenant.sh:146`). Сюда же — пути unix-сокетов и права на них (`~/.keiassist/cdata/send.sock`, 0600) |
 | Флаги безопасности | песочница, Landlock, `--project-root`, `--cwd` |
 
 Общий признак: **значение, которое применяется, когда никто ничего не выбрал.**
