@@ -4,7 +4,20 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.77.1 just shipped)
+- **fix(test): `tests/install/test-pathway.sh` could never pass.** Its
+  `_count_begins` helper ran `grep -c … || echo 0`, but `grep -c` on zero
+  matches *prints* `0` and *exits 1* — so the fallback fired on top of grep's
+  own output and the helper returned `"0\n0"`. The zero-block assertion in
+  `case_uninstall_preserves_user` therefore failed on every run since the file
+  was written, and because `fail` exits 1, cases 3 and 4 (reinstall
+  idempotency, symlink refusal) had never executed at all. `lib-pathway.sh`
+  itself was correct throughout. Verified by mutation: breaking
+  `pathway_uninstall` reproduces the same message the healthy code used to
+  emit, and reverting it goes green — 4/4 cases.
+
+- **feat(ci): wire the PATH-wiring suite into the shell-integration job.** It
+  was the last `tests/` suite outside CI, which is how a permanently-red test
+  went unnoticed.
 
 ## v0.77.1 — 2026-07-22
 

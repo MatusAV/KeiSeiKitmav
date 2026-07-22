@@ -201,6 +201,12 @@ jobs:
         run: sudo apt-get update && sudo apt-get install -y jq sqlite3
       - name: hook wiring (capability-check contract)
         run: bash tests/hook_wiring_integration.sh
+      - name: PATH wiring (lib-pathway idempotency + symlink refusal)
+        # Same story as the suites above, one level worse: this one was not
+        # CI-wired AND its own helper was broken, so case 2 failed on every
+        # run and cases 3-4 never executed at all. Wired here so it cannot
+        # rot silently again.
+        run: bash tests/install/test-pathway.sh
       - name: substrate assembly (migrated manifests)
         run: bash tests/substrate_integration.sh
       - name: agent outcome backfill (ledger UPDATE behaviour)

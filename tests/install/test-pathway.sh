@@ -50,8 +50,18 @@ _cleanup() {
 trap '_cleanup' EXIT
 
 # Count marker lines in a file (one block has one BEGIN + one END).
+#
+# `grep -c` on zero matches PRINTS "0" and EXITS 1, so the old
+# `grep -c … || echo 0` emitted the count twice — "0\n0" — and the
+# zero-block assertion in case_uninstall_preserves_user could never hold.
+# It failed on every run since the file was written, which also meant cases
+# 3 and 4 never executed (the helper `fail`s with exit 1). Capture the count
+# and only substitute 0 when grep produced nothing at all (missing file,
+# exit 2).
 _count_begins() {
-  grep -c "^# >>> kei-substrate <<<\$" "$1" 2>/dev/null || echo 0
+  local n
+  n="$(grep -c "^# >>> kei-substrate <<<\$" "$1" 2>/dev/null)" || n="${n:-0}"
+  printf '%s\n' "${n:-0}"
 }
 
 # Case 1 — pathway_install_bashrc twice → one block.
