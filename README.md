@@ -51,7 +51,7 @@ sleep consolidates 30-session windows into morning markdown reports.
 
 ## By the numbers
 
-<!-- count:RUST_CRATES -->113<!-- /count:RUST_CRATES --> Rust crates · <!-- count:SKILLS -->69<!-- /count:SKILLS --> skills · <!-- count:HOOKS -->55<!-- /count:HOOKS --> hooks · <!-- count:AGENTS -->39<!-- /count:AGENTS --> agent manifests ·
+<!-- count:RUST_CRATES -->113<!-- /count:RUST_CRATES --> Rust crates · <!-- count:SKILLS -->69<!-- /count:SKILLS --> skills · <!-- count:HOOKS -->56<!-- /count:HOOKS --> hooks · <!-- count:AGENTS -->39<!-- /count:AGENTS --> agent manifests ·
 <!-- count:BLOCKS -->85<!-- /count:BLOCKS --> substrate blocks · <!-- count:PROFILES -->12<!-- /count:PROFILES --> install profiles (minimal → full).
 
 ## Platforms
@@ -166,7 +166,7 @@ guards).
 wrapper that clones the repo and delegates to `bootstrap.sh` — single
 source of truth, no duplicated install logic.
 
-<!-- count:AGENTS -->39<!-- /count:AGENTS --> agents + <!-- count:SKILLS -->69<!-- /count:SKILLS --> skills + <!-- count:HOOKS -->55<!-- /count:HOOKS --> hooks + nightly consolidation wired
+<!-- count:AGENTS -->39<!-- /count:AGENTS --> agents + <!-- count:SKILLS -->69<!-- /count:SKILLS --> skills + <!-- count:HOOKS -->56<!-- /count:HOOKS --> hooks + nightly consolidation wired
 in under a minute on a clean machine. Install profiles
 (`outcome-only`, `minimal`, `core`, `ops`, `dev`, `mcp`, `cortex`,
 `local-mirror`, `dashboard`, `full-hub`, `full`) defined in

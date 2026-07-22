@@ -1,12 +1,12 @@
 # KeiSeiKit DNA Encyclopedia
 
-> Auto-generated from kei-registry. Last regenerated: 2026-07-15T16:32:17Z.
-> Total blocks: 347. Per-type breakdown:
+> Auto-generated from kei-registry. Last regenerated: 2026-07-22T09:12:41Z.
+> Total blocks: 349. Per-type breakdown:
 
 | Type | Count |
 |---|---:|
 | atom | 114 |
-| hook | 53 |
+| hook | 55 |
 | primitive | 113 |
 | skill | 67 |
 
@@ -206,7 +206,7 @@ Sorted alphabetically by name.
 | Web Effects Skill | md | skill::md::899492e4:… | skills/web-effects/SKILL.md |
 | nano-banana | md | skill::md::0c3a8d28:… | skills/nano-banana/SKILL.md |
 
-## Hook (53)
+## Hook (55)
 
 Sorted alphabetically by name.
 
@@ -254,6 +254,7 @@ Sorted alphabetically by name.
 | phase-b-rem | shell | hook::shell::72c51cc… | hooks/phase-b-rem.sh |
 | post-commit-audit | shell | hook::shell::9c774b9… | hooks/post-commit-audit.sh |
 | post-write-check | shell | hook::shell::ceef965… | hooks/post-write-check.sh |
+| projects-registry-sync | shell | hook::shell::437e985… | hooks/projects-registry-sync.sh |
 | recurrence-suggest | shell | hook::shell::553ff37… | hooks/recurrence-suggest.sh |
 | rust-first | shell | hook::shell::fdb1637… | hooks/rust-first.sh |
 | safety-guard | shell | hook::shell::0b7aaa7… | hooks/safety-guard.sh |
@@ -265,6 +266,7 @@ Sorted alphabetically by name.
 | task-timer | shell | hook::shell::b345843… | hooks/task-timer.sh |
 | tomd-preread | shell | hook::shell::051fab9… | hooks/tomd-preread.sh |
 | tool-use-event | shell | hook::shell::66eb2ad… | hooks/tool-use-event.sh |
+| truthfulness-guard | shell | hook::shell::7b7d90e… | hooks/truthfulness-guard.sh |
 
 ## Atom (114)
 
@@ -386,6 +388,13 @@ Sorted alphabetically by name.
 | user-memory | atom::md::e996fe53::… | _blocks/path-user-memory.md | b8f9e85f |
 | user-rules | atom::md::7f8f7c9d::… | _blocks/path-user-rules.md | bc8e0acf |
 | verify::fork-audit | atom::verify::a4271e… | _capabilities/verify/fork-audit/capability.toml | 3fb8694d |
+
+---
+
+## Supersede chains
+
+- `kei-mcp` — 2 versions: 5c5fb8c4 → 5c5fb8c4
+- `kei-mcp::kei-mcp` — 4 versions: f8e9c2cb → b7d61746 → d6077682 → e6a6b7fb
 
 ---
 
