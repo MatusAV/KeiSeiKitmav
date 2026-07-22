@@ -53,6 +53,8 @@ Usage: ./install.sh [flags]
                               dev          — 17 dev tools (kei-migrate, kei-memory, …)
                               mcp          — 10 MCP/LBM tools (kei-router, kei-sage, …)
                               cortex       — 11 cortex stack (kei-cortex daemon + cortex-ui)
+                              client       — full minus the dev-hub services;
+                                             the everyday single-workstation set
                               full         — all primitives (MANIFEST source of truth)
                             Dev hub (local-first dev environment, macOS arm64):
                               local-mirror — cortex + Forgejo + CI runner (13 prims)
@@ -60,7 +62,10 @@ Usage: ./install.sh [flags]
                               full-hub     — dashboard + zoekt + mdbook + restic + gdrive (20)
 
   --add=<a>[,<b>,...]       add one or more primitives on top of current install.
-                            Name must match [primitive.<name>] in _primitives/MANIFEST.toml.
+                            Name must match [primitive.<name>] in _primitives/MANIFEST.toml,
+                            or a profile name — a profile expands to its members.
+                            Purely additive: never prunes what is already installed,
+                            so this is the safe way to top up an existing machine.
 
   --remove=<name>           remove a single primitive (shell file or rust crate dir +
                             scoped workspace Cargo.toml regenerated + rebuilt).

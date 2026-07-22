@@ -88,6 +88,48 @@ check_dir() {
   fi
 }
 
+# v0.77: a primitive removal that drops ~/.claude/agents/_primitives/<x>.sh
+# but leaves the PATH symlink ~/.claude/bin/<x> behind yields a name that
+# resolves on PATH yet cannot execute ("No such file or directory"), which
+# reads as a missing install rather than a broken link. --fix unlinks them;
+# only symlinks are ever touched, never real files.
+check_dangling_links() {
+  local dir="$HOME_DIR/.claude/bin" link n=0
+  [ -d "$dir" ] || { _pass "$dir absent (nothing to check)"; return 0; }
+  while IFS= read -r link; do
+    [ -z "$link" ] && continue
+    n=$((n+1))
+    if [ "$FIX" = "1" ] && rm -f "$link" 2>/dev/null; then
+      _pass "removed dangling symlink $(basename "$link") (--fix)"
+    else
+      _warn "dangling symlink: $(basename "$link") -> $(readlink "$link")" \
+            "target is gone; run with --fix to unlink, or reinstall the primitive"
+    fi
+  done <<< "$(find "$dir" -maxdepth 1 -xtype l 2>/dev/null)"
+  [ "$n" = "0" ] && _pass "no dangling symlinks in $dir"
+  return 0
+}
+
+# v0.77: catches the inverse of the above — a prebuilt binary still sits in
+# target/release while its crate source tree was pruned, so the substrate
+# looks healthy but cannot be rebuilt. This is what an implicit-default
+# install used to leave behind (see run_primitives_phase in lib-scaffold.sh).
+check_crate_sources() {
+  local installed_file="$AGENTS_DIR/_primitives/.installed"
+  local rust_dir="$AGENTS_DIR/_primitives/_rust" name missing=0
+  [ -f "$installed_file" ] || { _pass ".installed absent (fresh install)"; return 0; }
+  while IFS= read -r name; do
+    [ -z "$name" ] && continue
+    [ -x "$TARGET_DIR/$name" ] || continue
+    [ -d "$rust_dir/$name" ] && continue
+    missing=$((missing+1))
+    _warn "crate source missing for $name" \
+          "binary exists in target/release but $rust_dir/$name is gone — cannot rebuild; reinstall with install.sh --add=$name"
+  done <<< "$(cat "$installed_file")"
+  [ "$missing" = "0" ] && _pass "every installed rust primitive has its crate source"
+  return 0
+}
+
 check_ledger_schema() {
   [ -f "$LEDGER_DB" ] || { _warn "$LEDGER_DB missing" "kei-fork/kei-spawn first run will create it"; return 0; }
   command -v sqlite3 >/dev/null 2>&1 || { _warn "sqlite3 missing" "cannot inspect ledger schema"; return 0; }
@@ -106,6 +148,8 @@ done
 _section "filesystem"
 check_dir "$AGENTS_DIR/_primitives"
 check_dir "$TARGET_DIR"
+check_dangling_links
+check_crate_sources
 check_ledger_schema
 
 _section "optional cortex profile"

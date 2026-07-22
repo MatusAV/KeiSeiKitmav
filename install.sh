@@ -204,9 +204,9 @@ PROFILE_EXPLICIT=0
 [ -n "${PROFILE:-}" ] && PROFILE_EXPLICIT=1
 PROFILE="${PROFILE:-minimal}"
 case "$PROFILE" in
-  minimal|core|frontend|ops|dev|mcp|cortex|full|custom|local-mirror|dashboard|full-hub|outcome-only) ;;
+  minimal|core|frontend|ops|dev|mcp|cortex|client|full|custom|local-mirror|dashboard|full-hub|outcome-only) ;;
   *)
-    err "unknown profile: $PROFILE. Valid: outcome-only | minimal | core | frontend | ops | dev | mcp | cortex | local-mirror | dashboard | full-hub | full"
+    err "unknown profile: $PROFILE. Valid: outcome-only | minimal | core | frontend | ops | dev | mcp | cortex | client | local-mirror | dashboard | full-hub | full"
     exit 1
     ;;
 esac

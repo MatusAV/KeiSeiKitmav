@@ -87,14 +87,23 @@ copy_pet_scripts() {
 # FAST (no per-rust rebuild). A single regenerate_rust_workspace at the end
 # of install_primitives handles the final state.
 clean_slate_primitives() {
-  local existing_installed n k f c
+  local existing_installed n k f c link
   existing_installed="$(read_installed)"
   [ -z "${existing_installed:-}" ] && return 0
   while IFS= read -r n; do
     [ -z "$n" ] && continue
     k="$(primitive_field "$n" kind 2>/dev/null || true)"
     case "$k" in
-      shell) f="$(primitive_field "$n" file)";  [ -n "$f" ] && rm -f "$AGENTS_DIR/_primitives/$f" ;;
+      shell)
+        f="$(primitive_field "$n" file)";  [ -n "$f" ] && rm -f "$AGENTS_DIR/_primitives/$f"
+        # v0.77 fix: copy_shell_primitive also drops a PATH symlink into
+        # ~/.claude/bin (see its v0.64 comment). Removing only the .sh left
+        # that symlink dangling — `kei-doctor` on PATH pointing at nothing.
+        # remove_shell_primitive already pairs the two; clean slate must too.
+        # Only ever unlink our own symlink, never a real file.
+        link="${HOME_DIR:-$HOME}/.claude/bin/$n"
+        [ -L "$link" ] && rm -f "$link"
+        ;;
       rust)  c="$(primitive_field "$n" crate)"; [ -n "$c" ] && rm -rf "$AGENTS_DIR/_primitives/_rust/$c" ;;
     esac
   done <<< "$existing_installed"
@@ -113,13 +122,34 @@ install_profile_primitives() {
   fi
 }
 
-# Top-level primitive phase: meta + sleep + clean + install.
+# Top-level primitive phase: copy metadata, then clean, then install.
+#
+# v0.77 fix — the clean-slate step is guarded on PROFILE_EXPLICIT (set by
+# install.sh when --profile= or the interactive menu chose the profile)
+# [REAL: install.sh:203-205]. A bare non-TTY run defaults to PROFILE=minimal,
+# and `minimal = []` [REAL: _primitives/MANIFEST.toml, profile.minimal], so the
+# old unconditional sequence
+#     clean_slate_primitives -> install_profile_primitives(empty)
+# wiped every installed primitive and put nothing back: kei-doctor, tomd,
+# harden-base, kei-ci-lint, kei-docs-scaffold, log-ship and metrics-scrape all
+# vanished from a working cortex-class install.
+#
+# v0.76.0 already guarded the *profile stamp* against the same non-TTY default
+# ("never let a non-interactive minimal DEFAULT downgrade an existing stamp")
+# [REAL: install.sh:216-225] — but the substrate itself was destroyed before
+# that guard was reached. This closes the other half: an implicit default never
+# removes primitives, it only tops the set up. An explicit --profile=X still
+# means "exactly X" and still prunes.
 run_primitives_phase() {
   copy_primitives_meta
   copy_sleep_scripts
   copy_pet_scripts
   say "resolving primitives for profile=$PROFILE"
-  clean_slate_primitives
+  if [ "${PROFILE_EXPLICIT:-0}" = "1" ]; then
+    clean_slate_primitives
+  else
+    say "  profile was defaulted (not explicitly chosen) — skipping clean slate, install is additive"
+  fi
   install_profile_primitives
 }
 

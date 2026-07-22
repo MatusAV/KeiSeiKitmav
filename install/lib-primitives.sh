@@ -186,7 +186,13 @@ install_primitives() {
   installed_clean=""
   while IFS= read -r p; do
     [ -z "$p" ] && continue
-    kind="$(primitive_field "$p" kind)"
+    # v0.77: `|| true` is load-bearing. primitive_field exits 2 when the name
+    # has no [primitive.<name>] section, and under `set -e` (line 1) a bare
+    # assignment from that command substitution terminated the whole installer
+    # with status 2 and not one line of output — so the `*)` arm below was
+    # unreachable and a stray name in a profile killed the run silently.
+    # That is exactly what `profile.cortex`'s "kei-model" entry did.
+    kind="$(primitive_field "$p" kind || true)"
     install_ok=1
     case "$kind" in
       shell)    copy_shell_primitive "$p" || install_ok=0 ;;

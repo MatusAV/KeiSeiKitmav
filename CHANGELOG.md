@@ -4,7 +4,63 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.76.0 just shipped)
+(none — v0.77.0 just shipped)
+
+## v0.77.0 — 2026-07-22
+
+Installer safety cut. Found by running `./install.sh` on a healthy cortex-class
+WSL box to sync one drifted skill file: the run destroyed the substrate instead.
+
+- **fix(install): a stray name in a profile no longer kills the installer in
+  silence.** `install_primitives` read each primitive's kind with a bare
+  `kind="$(primitive_field "$p" kind)"`. `primitive_field` exits 2 when the name
+  has no `[primitive.<name>]` section, and under `set -e` that assignment ended
+  the whole run with status 2 and zero output — leaving the `*) warn "unknown
+  primitive"` arm permanently unreachable. Added `|| true`. This was not
+  hypothetical: `profile.cortex` listed `kei-model`, so `./install.sh
+  --profile=cortex` had been dying on contact.
+
+- **fix(manifest): drop `kei-model` from `profile.cortex`.** It is a transitive
+  path-dep of `kei-router`, not a primitive. It was added 2026-05-18 to stop the
+  workspace failing with "failed to read kei-model/Cargo.toml", but v0.64 solved
+  that properly — `copy_rust_primitive` walks the full path-dep closure via
+  `_rust_transitive_path_deps`, and `kei-router/Cargo.toml` declares
+  `kei-model = { path = "../kei-model" }`, so the directory arrives on its own.
+  The profile entry bought nothing and cost the whole install.
+
+- **fix(install): an implicitly-defaulted profile no longer prunes primitives.**
+  `run_primitives_phase` ran `clean_slate_primitives` unconditionally, then
+  installed the resolved set. A bare non-TTY run defaults to `PROFILE=minimal`,
+  and `minimal = []`, so the pair became "delete everything, install nothing":
+  kei-doctor, tomd, harden-base, kei-ci-lint, kei-docs-scaffold, log-ship and
+  metrics-scrape vanished, along with every rust crate source tree — while
+  `target/release` kept its prebuilt binaries, so the box still looked healthy.
+  The clean-slate step is now guarded on `PROFILE_EXPLICIT`; an implicit default
+  is purely additive. An explicit `--profile=X` still means exactly X.
+
+  v0.76.0 guarded the *profile stamp* against this same default and described
+  minimal's fast path as one that "uninstalls nothing". That was true of the
+  rust build phase only — the primitive phase was deleting all along. This
+  finishes the fix that release started.
+
+- **fix(install): clean slate no longer leaves dangling PATH symlinks.**
+  `copy_shell_primitive` installs both `_primitives/<x>.sh` and a
+  `~/.claude/bin/<x>` symlink onto PATH (v0.64); `clean_slate_primitives`
+  removed only the first, so `kei-doctor` stayed resolvable on PATH while
+  failing with "No such file or directory". It now unlinks the symlink too,
+  matching `remove_shell_primitive`. Only symlinks are touched, never files.
+
+- **feat(manifest): new `client` profile** — `full` minus the seven dev-hub
+  services, plus cortex's `kei-dna-index` / `kei-atom-discovery`. The everyday
+  single-workstation substrate had no name in the profile table, so a machine
+  running it had nothing valid to put in `~/.claude/.kei-profile`, and every
+  valid substitute pruned primitives it actually used.
+
+- **feat(kei-doctor): two new filesystem checks.** `check_dangling_links` flags
+  (and with `--fix` removes) symlinks in `~/.claude/bin` whose target is gone.
+  `check_crate_sources` flags primitives whose binary still sits in
+  `target/release` while the crate source tree was pruned — the state that made
+  a gutted install read as green.
 
 ## v0.76.0 — 2026-07-16
 
