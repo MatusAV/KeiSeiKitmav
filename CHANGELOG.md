@@ -4,6 +4,12 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
+(none — v0.78.0 just shipped)
+
+## v0.78.0 — 2026-07-22
+
+A new enforcement rule, plus the test suite that had never once run green.
+
 - **feat(rule): RULE 0.25 — a default is the user's canon, not mine to retune.**
   `rules/no-silent-default-change.md` plus a `hooks/default-change-guard.sh`
   PreToolUse gate at enforce severity: an Edit/Write that rewrites a declared
