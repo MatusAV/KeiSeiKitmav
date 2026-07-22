@@ -50,6 +50,11 @@ WSL box to sync one drifted skill file: the run destroyed the substrate instead.
   failing with "No such file or directory". It now unlinks the symlink too,
   matching `remove_shell_primitive`. Only symlinks are touched, never files.
 
+- **fix(install): `--no-execute` no longer writes the profile stamp.** The
+  dry-run short-circuit sits well below the stamp write, so asking the installer
+  what `--profile=X` *would* do rewrote `~/.claude/.kei-profile` to X for real.
+  Both stamps (profile and kit-dir) are now skipped under `--no-execute`.
+
 - **feat(manifest): new `client` profile** — `full` minus the seven dev-hub
   services, plus cortex's `kei-dna-index` / `kei-atom-discovery`. The everyday
   single-workstation substrate had no name in the profile table, so a machine

@@ -52,7 +52,7 @@ sleep consolidates 30-session windows into morning markdown reports.
 ## By the numbers
 
 <!-- count:RUST_CRATES -->113<!-- /count:RUST_CRATES --> Rust crates · <!-- count:SKILLS -->69<!-- /count:SKILLS --> skills · <!-- count:HOOKS -->55<!-- /count:HOOKS --> hooks · <!-- count:AGENTS -->39<!-- /count:AGENTS --> agent manifests ·
-<!-- count:BLOCKS -->85<!-- /count:BLOCKS --> substrate blocks · 11 install profiles (minimal → full).
+<!-- count:BLOCKS -->85<!-- /count:BLOCKS --> substrate blocks · <!-- count:PROFILES -->12<!-- /count:PROFILES --> install profiles (minimal → full).
 
 ## Platforms
 

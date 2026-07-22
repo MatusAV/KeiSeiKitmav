@@ -214,18 +214,28 @@ say "profile: $PROFILE"
 # Stamp the chosen profile so `kei` splash + tools can show it (bin/kei reads
 # this). Only (re)write when the profile was explicitly chosen or no stamp
 # exists yet — never let a non-interactive minimal DEFAULT downgrade an existing
-# stamp, since minimal's fast path uninstalls nothing (it would misreport a
-# full/cortex substrate as minimal).
-mkdir -p "$HOME_DIR/.claude" 2>/dev/null || true
-_kei_stamp="$HOME_DIR/.claude/.kei-profile"
-if [ "$PROFILE_EXPLICIT" = "1" ] || [ ! -f "$_kei_stamp" ]; then
-  printf '%s\n' "$PROFILE" > "$_kei_stamp" 2>/dev/null || true
+# stamp (v0.76.0).
+#
+# v0.77: both stamps are also skipped under --no-execute. The plan/dry-run
+# short-circuit lives further down (the `if [ "$NO_EXECUTE" = "1" ]` block), so
+# everything above it used to run for real — meaning `--no-execute`, documented
+# as "print the plan and exit", silently rewrote ~/.claude/.kei-profile. Asking
+# the installer what a profile *would* do must not change what the machine
+# reports it is.
+if [ "$NO_EXECUTE" = "1" ]; then
+  say "  (--no-execute: leaving profile + kit-dir stamps untouched)"
 else
-  say "  keeping existing profile stamp '$(head -1 "$_kei_stamp" 2>/dev/null)' (non-interactive default '$PROFILE' would downgrade it)"
+  mkdir -p "$HOME_DIR/.claude" 2>/dev/null || true
+  _kei_stamp="$HOME_DIR/.claude/.kei-profile"
+  if [ "$PROFILE_EXPLICIT" = "1" ] || [ ! -f "$_kei_stamp" ]; then
+    printf '%s\n' "$PROFILE" > "$_kei_stamp" 2>/dev/null || true
+  else
+    say "  keeping existing profile stamp '$(head -1 "$_kei_stamp" 2>/dev/null)' (non-interactive default '$PROFILE' would downgrade it)"
+  fi
+  unset _kei_stamp
+  # Stamp the kit checkout dir so `kei configure` can re-source the libs later.
+  printf '%s\n' "$KIT_DIR" > "$HOME_DIR/.claude/.kei-kit-dir" 2>/dev/null || true
 fi
-unset _kei_stamp
-# Stamp the kit checkout dir so `kei configure` can re-source the libs later.
-printf '%s\n' "$KIT_DIR" > "$HOME_DIR/.claude/.kei-kit-dir" 2>/dev/null || true
 
 # --- resolve profile -> primitive list (UNCONDITIONAL, SSoT) -------------
 # Must run BEFORE any reader of PROFILE_PRIMS: the --no-execute plan block

@@ -49,6 +49,20 @@ count_profile() {
   ' "$MANIFEST"
 }
 
+# How many profiles the [profile] table declares. v0.77: the README stated
+# "11 install profiles" as bare prose, so adding the `client` profile left it
+# stale with nothing to catch it — the same failure mode the RUST_CRATES marker
+# was introduced to fix. Counts `name = [` lines inside [profile], so comment
+# lines and the blank line before the next table are ignored.
+count_profiles() {
+  awk '
+    /^\[profile\]/ { in_p=1; next }
+    /^\[/          { in_p=0 }
+    in_p && $2 == "=" && $1 !~ /^#/ { n++ }
+    END { print n + 0 }
+  ' "$MANIFEST"
+}
+
 count_files() { bash -c "$1" | wc -l | tr -d ' '; }   # bash -c instead of eval (security audit LOW 2026-05-18)
 
 # MANIFEST rust primitives are a CURATED install-registry subset of the Cargo
@@ -85,6 +99,7 @@ PROFILE_MCP=$(count_profile mcp)
 PROFILE_DEV=$(count_profile dev)
 PROFILE_OPS=$(count_profile ops)
 PROFILE_CORE=$(count_profile core)
+PROFILES=$(count_profiles)
 LBM_PORTS=10   # hand-maintained: v0.14 LBM port semantic group
 
 DANGLING=$(dangling_rust_primitives)
@@ -101,7 +116,7 @@ apply_markers() {
     -v m_br="$BRIDGES" \
     -v m_pf="$PROFILE_FULL"      -v m_pm="$PROFILE_MCP" \
     -v m_pd="$PROFILE_DEV"       -v m_po="$PROFILE_OPS" \
-    -v m_pc="$PROFILE_CORE" \
+    -v m_pc="$PROFILE_CORE"      -v m_pn="$PROFILES" \
     -v m_lb="$LBM_PORTS" '
     function sub_marker(name, val,    re) {
       re = "<!-- count:" name " -->[^<]*<!-- /count:" name " -->"
@@ -116,6 +131,7 @@ apply_markers() {
       sub_marker("PROFILE_MCP",      m_pm); sub_marker("PROFILE_DEV",      m_pd)
       sub_marker("PROFILE_OPS",      m_po)
       sub_marker("PROFILE_CORE",     m_pc); sub_marker("LBM_PORTS",        m_lb)
+      sub_marker("PROFILES",         m_pn)
       print
     }
   '
