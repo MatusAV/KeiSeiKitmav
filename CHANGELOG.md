@@ -4,7 +4,23 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.78.0 just shipped)
+(none — v0.78.1 just shipped)
+
+## v0.78.1 — 2026-07-22
+
+Follow-up to v0.78.0, from reading the rule back after it shipped. The tag was
+already published, so this goes out as a patch rather than being folded in.
+
+- **fix(hooks): the RULE 0.25 guard now covers the MCP write path.**
+  `rules/no-silent-default-change.md:59` declared the gate as PreToolUse on
+  `Write|Edit|mcp__kei__kei_write|mcp__kei__kei_edit`, and the hook body already
+  dispatches on those tool names — but it was registered under matcher
+  `Edit|Write` alone, so a default rewritten through `kei_write` / `kei_edit`
+  went straight past enforcement. Those are a full write path: `kei_edit` takes
+  `file_path`/`old_string`/`new_string` and `kei_write` takes
+  `file_path`/`content` (`kei-mcp/src/handlers/safe_tools/exec.rs:86-119`),
+  exactly the shape the hook parses. A second PreToolUse group now carries that
+  matcher; documentation and enforcement agree, and no other hook's scope moved.
 
 ## v0.78.0 — 2026-07-22
 
