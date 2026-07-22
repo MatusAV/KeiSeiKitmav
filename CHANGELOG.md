@@ -4,7 +4,26 @@ All notable changes are tagged via `git tag v*`. Latest entries first.
 
 ## Unreleased
 
-(none — v0.77.0 just shipped)
+(none — v0.77.1 just shipped)
+
+## v0.77.1 — 2026-07-22
+
+Follow-up to v0.77.0, from the same install run. v0.77.0 was already tagged and
+pushed when these two surfaced, so they ship as a patch rather than being folded
+into a published tag.
+
+- **fix(install): `--no-execute` no longer writes the profile stamp.** The
+  dry-run short-circuit sits at `install.sh:284`, but the stamp writes sit at
+  `219-228` — above it. So `--no-execute`, documented as "print the plan and
+  exit", really did rewrite `~/.claude/.kei-profile`; asking the installer what
+  `--profile=X` *would* do changed what the machine reports it is. Both stamps
+  (profile and kit-dir) are now inside the `NO_EXECUTE` guard.
+
+- **fix(readme): profile count moved into a `count:PROFILES` marker.** "11
+  install profiles" sat in the README as bare prose, so v0.77.0's new `client`
+  profile left it stale and the drift gate could not see it — the same failure
+  mode `count:RUST_CRATES` was introduced to fix. `regen-counts.sh` now counts
+  the `[profile]` table itself.
 
 ## v0.77.0 — 2026-07-22
 
@@ -49,11 +68,6 @@ WSL box to sync one drifted skill file: the run destroyed the substrate instead.
   removed only the first, so `kei-doctor` stayed resolvable on PATH while
   failing with "No such file or directory". It now unlinks the symlink too,
   matching `remove_shell_primitive`. Only symlinks are touched, never files.
-
-- **fix(install): `--no-execute` no longer writes the profile stamp.** The
-  dry-run short-circuit sits well below the stamp write, so asking the installer
-  what `--profile=X` *would* do rewrote `~/.claude/.kei-profile` to X for real.
-  Both stamps (profile and kit-dir) are now skipped under `--no-execute`.
 
 - **feat(manifest): new `client` profile** — `full` minus the seven dev-hub
   services, plus cortex's `kei-dna-index` / `kei-atom-discovery`. The everyday
