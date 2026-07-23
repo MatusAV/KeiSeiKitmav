@@ -30,23 +30,30 @@ fi
 # - "~$N", "$N/mo", "$N.NN", "$NN" (money needs decimal / unit / tilde / 2+ digits
 #   so shell positionals $1..$9 are NOT flagged)
 # - "Nm Ns", "займёт N", "should take N"
-NUMERIC_PATTERN='(~\s*[0-9]+(\.[0-9]+)?\s*(min|minute|hour|hr|day|week|month|sec|second|MB|GB|KB|LOC|line|test|crate|atomar|%|µs|ms|ns|TPS|req/s)|[0-9]+m\s*[0-9]+s|\$[0-9]+\.[0-9]+|\$[0-9]+/(mo|hr|day|run)|\$[0-9]{2,}|~\s*\$[0-9]+|should take|will take|takes about|займёт|за ~|estimated at|ETA[: ]|approximately\s+[0-9])'
+# NB: \bETA — граница слова: без неё grep -i ловит «eta» внутри LaTeX \beta/\theta/\zeta
+NUMERIC_PATTERN='(~\s*[0-9]+(\.[0-9]+)?\s*(min|minute|hour|hr|day|week|month|sec|second|MB|GB|KB|LOC|line|test|crate|atomar|%|µs|ms|ns|TPS|req/s)|[0-9]+m\s*[0-9]+s|\$[0-9]+\.[0-9]+|\$[0-9]+/(mo|hr|day|run)|\$[0-9]{2,}|~\s*\$[0-9]+|should take|will take|takes about|займёт|за ~|estimated at|\bETA[: ]|approximately\s+[0-9])'
 
 # Markers that satisfy the rule
 EVIDENCE_PATTERN='\[(REAL|FROM-JOURNAL|ESTIMATE-HTC)[: ]'
 
+# Проверки идут через here-string (grep ... <<< "$VAR"), НЕ через
+# `echo "$VAR" | grep -q`: под `set -o pipefail` grep -q выходит по первому
+# совпадению и закрывает pipe, echo на большом входе гибнет от SIGPIPE (141),
+# и pipefail делал весь конвейер ненулевым — из-за чего наличие маркера
+# читалось как отсутствие и хук НЕДЕТЕРМИНИРОВАННО блокировал валидные файлы.
+
 # Check if numeric pattern present
-if ! echo "$NEW_CONTENT" | grep -iqE "$NUMERIC_PATTERN"; then
+if ! grep -iqE "$NUMERIC_PATTERN" <<< "$NEW_CONTENT"; then
   exit 0
 fi
 
 # Numeric pattern present — check for evidence marker
-if echo "$NEW_CONTENT" | grep -qE "$EVIDENCE_PATTERN"; then
+if grep -qE "$EVIDENCE_PATTERN" <<< "$NEW_CONTENT"; then
   exit 0
 fi
 
-# Violation
-MATCHED="$(echo "$NEW_CONTENT" | grep -iEo "$NUMERIC_PATTERN" | head -3 | tr '\n' '; ')"
+# Violation ( || true: head -3 закрывает pipe → grep SIGPIPE, не роняем set -e)
+MATCHED="$(grep -iEo "$NUMERIC_PATTERN" <<< "$NEW_CONTENT" | head -3 | tr '\n' '; ' || true)"
 
 cat >&2 <<EOF
 ════════════════════════════════════════════════════════════════
