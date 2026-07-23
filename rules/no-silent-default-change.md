@@ -50,7 +50,7 @@
 
 Bulk / coding → **GLM**, judgment → **Opus**. Источник: `~/.claude/CLAUDE.md`,
 секция «Cost routing». Дефолтный провайдер морды = `glm`
-(`~/keiseikit-web/src/lib/config.ts:107`). Смена этого значения требует
+(`~/keiseikit-web/src/lib/config.ts:113`). Смена этого значения требует
 распоряжения пользователя даже при неработающем Z.ai.
 
 ## Enforcement
@@ -98,7 +98,7 @@ Bulk / coding → **GLM**, judgment → **Opus**. Источник: `~/.claude/C
   `jq -r '.hooks.PreToolUse[] | select((.hooks[].command // "") | test("default-change-guard")) | .matcher' ~/.claude/settings.json`
   → `Edit|Write`, `mcp__kei__kei_write|mcp__kei__kei_edit`, `Bash`.
 - Канон на месте: `grep -n "provider: 'glm'" ~/keiseikit-web/src/lib/config.ts`
-  → строка 107.
+  → строка 113.
 - Синхронизация кит → install: `diff -q ~/keisei/rules/no-silent-default-change.md ~/.claude/rules/no-silent-default-change.md`
   → без вывода.
 
